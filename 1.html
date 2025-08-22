@@ -159,8 +159,8 @@
     <nav class="tabs" id="tabs">
       <button class="tab-btn active" data-tab="routes">Routen</button>
       <button class="tab-btn" data-tab="box">Box</button>
-      <button class="tab-btn" data-tab="team">Select</button>
-      <button class="tab-btn" data-tab="allteams">Teams</button>
+      <button class="tab-btn" data-tab="team">team</button>
+      <button class="tab-btn" data-tab="allteams">all Teams</button>
       <button class="tab-btn" data-tab="lobby">Lobby</button>
       
     </nav>
@@ -190,6 +190,7 @@
 
     <!-- BOX -->
     <section class="panel" id="panel-box">
+     
       <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:10px">
         <h3 style="margin:0">Pokémon Box</h3>
         <div class="row">
@@ -201,8 +202,9 @@
       <div class="box-grid" id="boxGrid"></div>
     </section>
 
-    <!-- TEAM -->
+    <!-- SELECT -->
     <section class="panel" id="panel-team">
+    
       <h3>Team (max. 6)</h3>
       <div class="team-wrap" id="teamWrap"></div>
       <p class="helper pick-hint" id="pickHint" style="margin-top:8px; display:none">Auswahl aktiv: Klick einen Slot, um das Pokémon zu platzieren. (Oder ziehe es per Drag & Drop.)</p>
@@ -220,12 +222,18 @@
 
     <!-- LOBBY -->
     <section class="panel" id="panel-lobby">
+      <div id="nz-lobby"></div>
       <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:10px">
         <h3 style="margin:0">Lobby</h3>
         <span class="pill">Spieler: <b id="playerNameBadge">–</b></span>
       </div>
       <div class="players" id="playersList"></div>
       <p class="helper" style="margin-top:8px">Multiplayer folgt. Hier siehst du später alle Spieler, die der Lobby beigetreten sind.</p>
+    </section>
+ <!-- ALL TEAMS -->
+    <section class="panel" id="panel-allteams">
+      <div id="nz-allteams"></div>
+      <h1>hello</h1>
     </section>
   </main>
 
@@ -241,6 +249,7 @@
       <p class="footer">Tipp: Später fügen wir Online-Multiplayer hinzu. 🎮</p>
     </div>
   </div>
+  
 
   <script>
     // ---------- Utilities ----------
@@ -403,6 +412,9 @@
           state.box.push({ uid:uid(), id:chosen.id, name:chosen.name, sprite:SPRITE(chosen.id), routeName:rt.name, nickname:nick.value.trim(), caughtAt:now(), isInTeam:false });
         }
         save(); renderRoutes(); renderEncounter(); renderBox(); renderBoxDrawer(); renderRouteGroups();
+        if (window.NZ) {
+  window.NZ.upsertPokemon(rt.name, toTitle(chosen.name), true).catch(console.error);
+}
       };
 
       btnFailed.onclick = ()=>{
@@ -434,6 +446,7 @@
         card.className = 'poke-card';
         card.draggable = true;
         card.dataset.uid = mon.uid;
+        card.setAttribute('data-route', mon.routeName);
         card.innerHTML = `
           <div class="poke-top">
             <div>
@@ -444,7 +457,9 @@
           <div class="poke-sprite"><img alt="${toTitle(mon.name)}" src="${mon.sprite}"></div>
           ${mon.isInTeam?`<div class="ribbon">Im Team</div>`:''}
         `;
-        card.addEventListener('dragstart', e=>{ card.classList.add('dragging'); e.dataTransfer.setData('text/plain', mon.uid); });
+        card.addEventListener('dragstart', e=>{ card.classList.add('dragging'); e.dataTransfer.setData('text/plain', mon.uid); 
+        e.dataTransfer.setData('text/route', mon.routeName); // <— wichtig für Multiplayer-Drag
+        });
         card.addEventListener('dragend', ()=>card.classList.remove('dragging'));
         card.addEventListener('click', ()=>{
           selectedFromBoxUid = mon.uid;
@@ -467,6 +482,7 @@
         card.className = 'poke-card';
         card.draggable = true;
         card.dataset.uid = mon.uid;
+        card.setAttribute('data-route', mon.routeName); // <— Route fürs Multiplayer-Drag
         card.innerHTML = `
           <div class="poke-top">
             <div>
@@ -478,7 +494,11 @@
           <div class="poke-sprite"><img alt="${toTitle(mon.name)}" src="${mon.sprite}"></div>
           ${mon.isInTeam?`<div class="ribbon">Im Team</div>`:''}
         `;
-        card.addEventListener('dragstart', e=>{ card.classList.add('dragging'); e.dataTransfer.setData('text/plain', mon.uid); });
+        card.addEventListener('dragstart', e=>{
+  card.classList.add('dragging');
+  e.dataTransfer.setData('text/plain', mon.uid);
+  e.dataTransfer.setData('text/route', mon.routeName); // <— wichtig
+});
         card.addEventListener('dragend', ()=>card.classList.remove('dragging'));
         card.querySelector('[data-remove]').onclick = (ev)=>{
           ev.stopPropagation();
@@ -528,22 +548,48 @@
         // Drag & Drop
         slot.addEventListener('dragover', e=>{ e.preventDefault(); slot.classList.add('over'); });
         slot.addEventListener('dragleave', ()=>slot.classList.remove('over'));
-        slot.addEventListener('drop', e=>{
-          e.preventDefault(); slot.classList.remove('over');
-          const uid = e.dataTransfer.getData('text/plain');
-          const mon = state.box.find(m=>m.uid===uid);
-          if(!mon){ return; }
-          const already = state.team.findIndex(u=>u===uid);
-          if(already>=0){
-            const prev = state.team[i];
-            state.team[already] = prev || null;
-          }
-          const prevUid = state.team[i];
-          if(prevUid){ const pm = state.box.find(m=>m.uid===prevUid); if(pm) pm.isInTeam = false; }
-          state.team[i] = uid; mon.isInTeam = true; selectedFromBoxUid = null;
-          save(); renderTeam(); renderBox(); renderBoxDrawer(); renderRouteGroups();
-          $('#pickHint').style.display = 'none';
-        });
+        slot.addEventListener('drop', async e => {
+  e.preventDefault(); 
+  slot.classList.remove('over');
+
+  const uid = e.dataTransfer.getData('text/plain');
+  const mon = state.box.find(m => m.uid === uid);
+  if (!mon) return;
+
+  const already = state.team.findIndex(u => u === uid);
+  if (already >= 0) {
+    const prev = state.team[i];
+    state.team[already] = prev || null;
+  }
+
+  const prevUid = state.team[i];
+  if (prevUid) {
+    const pm = state.box.find(m => m.uid === prevUid);
+    if (pm) pm.isInTeam = false;
+  }
+
+  state.team[i] = uid;
+  mon.isInTeam = true;
+  selectedFromBoxUid = null;
+
+  save(); 
+  renderTeam(); 
+  renderBox(); 
+  renderBoxDrawer(); 
+  renderRouteGroups();
+  $('#pickHint').style.display = 'none';
+
+  // 👇 NEU: globales Mapping für alle in der Lobby setzen
+  try {
+    const route = mon?.routeName || e.dataTransfer.getData('text/route'); // Fallback
+    if (window.NZ && route) {
+      await window.NZ.assignGlobalSlot(route, i + 1);
+    }
+  } catch (err) {
+    console.error(err);
+  }
+});
+
 
         // Click-to-place (wenn Auswahl aktiv)
         slot.addEventListener('click', ()=>{
@@ -686,6 +732,7 @@
     })();
     const elTeams = document.querySelector("#allteams") || (() => {
       const d = document.createElement("div"); d.id = "allteams"; document.body.appendChild(d); return d;
+
     })();
     const elSlots = document.querySelector("#global-slots") || (() => {
       const d = document.createElement("div"); d.id = "global-slots"; document.body.appendChild(d); return d;
