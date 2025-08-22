@@ -55,7 +55,7 @@ function ensurePane(id,title){
   }
   return el;
 }
-const paneLobby=ensurePane("pane-lobby","Lobby");
+const paneLobby =ensurePane("pane-lobby","Lobby");
 const paneBox  =ensurePane("pane-box","Box");
 const paneTeam =ensurePane("pane-team","Team (max. 6)");
 const paneAll  =ensurePane("pane-all","Alle Teams");

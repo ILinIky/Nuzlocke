@@ -159,8 +159,10 @@
     <nav class="tabs" id="tabs">
       <button class="tab-btn active" data-tab="routes">Routen</button>
       <button class="tab-btn" data-tab="box">Box</button>
-      <button class="tab-btn" data-tab="team">Team</button>
+      <button class="tab-btn" data-tab="team">Select</button>
+      <button class="tab-btn" data-tab="allteams">Teams</button>
       <button class="tab-btn" data-tab="lobby">Lobby</button>
+      
     </nav>
   </header>
 
@@ -682,8 +684,8 @@
     const elLobby = document.querySelector("#lobby") || (() => {
       const d = document.createElement("div"); d.id = "lobby"; document.body.appendChild(d); return d;
     })();
-    const elTeams = document.querySelector("#teams-overview") || (() => {
-      const d = document.createElement("div"); d.id = "teams-overview"; document.body.appendChild(d); return d;
+    const elTeams = document.querySelector("#allteams") || (() => {
+      const d = document.createElement("div"); d.id = "allteams"; document.body.appendChild(d); return d;
     })();
     const elSlots = document.querySelector("#global-slots") || (() => {
       const d = document.createElement("div"); d.id = "global-slots"; document.body.appendChild(d); return d;
@@ -815,13 +817,13 @@
     
       elTeams.innerHTML = `
         <style>
-          #teams-overview{margin:1rem 0;color:#e5e7eb;background:#0b1220;padding:1rem;border-radius:1rem}
-          #teams-overview .pname{font-weight:700;margin:.25rem 0 .5rem}
-          #teams-overview .trow{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:.5rem}
-          #teams-overview .tcell{border:1px solid #374151;border-radius:.75rem;padding:.5rem;min-height:64px;background:#111827}
-          #teams-overview .route{font-size:.85rem;opacity:.9}
-          #teams-overview .mon{font-size:1rem;margin-top:.25rem}
-          #teams-overview .ghost{opacity:.5}
+          #allteams{margin:1rem 0;color:#e5e7eb;background:#0b1220;padding:1rem;border-radius:1rem}
+          #allteams .pname{font-weight:700;margin:.25rem 0 .5rem}
+          #allteams .trow{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:.5rem}
+          #allteams .tcell{border:1px solid #374151;border-radius:.75rem;padding:.5rem;min-height:64px;background:#111827}
+          #allteams .route{font-size:.85rem;opacity:.9}
+          #allteams .mon{font-size:1rem;margin-top:.25rem}
+          #allteams .ghost{opacity:.5}
         </style>
         <h3>Team (max. 6) — Übersicht</h3>
         ${htmlPlayers || "<i>noch keine Spieler online</i>"}
