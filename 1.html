@@ -672,5 +672,230 @@
 
     boot();
   </script>
+  <script type="module">
+    const API = "/api/nuzlocke";           // via netlify.toml-Redirect
+    const HEARTBEAT_MS = 15000;
+    const POLL_MS = 5000;
+    let playerId = localStorage.getItem("playerId") || "";
+    let playerName = localStorage.getItem("playerName") || "";
+    
+    const elLobby = document.querySelector("#lobby") || (() => {
+      const d = document.createElement("div"); d.id = "lobby"; document.body.appendChild(d); return d;
+    })();
+    const elTeams = document.querySelector("#teams-overview") || (() => {
+      const d = document.createElement("div"); d.id = "teams-overview"; document.body.appendChild(d); return d;
+    })();
+    const elSlots = document.querySelector("#global-slots") || (() => {
+      const d = document.createElement("div"); d.id = "global-slots"; document.body.appendChild(d); return d;
+    })();
+    
+    // --- Helpers ---
+    async function api(action, payload={}) {
+      const r = await fetch(API, {
+        method: "POST",
+        headers: { "content-type":"application/json" },
+        body: JSON.stringify({ action, ...payload })
+      });
+      const t = await r.text();
+      let j; try { j = JSON.parse(t) } catch { j = { error: t } }
+      if (!r.ok || j.error) throw new Error(j.error || `HTTP ${r.status}`);
+      return j;
+    }
+    async function apiGet() {
+  const code = (new URL(location.href)).searchParams.get('code') || localStorage.getItem('lobbyCode') || '';
+  // Besser: POST
+  const r = await fetch('/api/nuzlocke', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ action: 'list', code })
+  });
+  if (!r.ok) {
+    const t = await r.text();
+    throw new Error(`HTTP ${r.status} ${t}`);
+  }
+  return r.json();
+}
+
+    function fmtSlot(s){ return Number(s) >= 1 && Number(s) <= 6 ? Number(s) : null; }
+    function ensureNamePrompt() {
+      if (!playerName) {
+        playerName = prompt("Dein Spielername?")?.trim() || "";
+        if (playerName) localStorage.setItem("playerName", playerName);
+      }
+    }
+    
+    // --- Lobby Join + Heartbeat ---
+    async function joinLobby() {
+      ensureNamePrompt();
+      if (!playerName) return;
+      const j = await api("join", { name: playerName });
+      playerId = j.player.id;
+      localStorage.setItem("playerId", playerId);
+    }
+    async function heartbeat() {
+      if (!playerId) return;
+      await api("heartbeat", { playerId });
+    }
+    setInterval(heartbeat, HEARTBEAT_MS);
+    
+    // --- Global Slots UI (1..6, Drop-Ziele) ---
+    function renderGlobalSlots(routeSlots=[]) {
+      const map = new Map(routeSlots.map(r => [r.slot, r.route]));
+      elSlots.innerHTML = `
+        <style>
+          #global-slots{display:grid;grid-template-columns:repeat(6,minmax(100px,1fr));gap:.75rem;margin:1rem 0}
+          .slot{border:1px dashed #9ca3af;border-radius:.75rem;min-height:72px;display:flex;align-items:center;justify-content:center;padding:.5rem;background:#0b1220;color:#e5e7eb}
+          .slot h4{margin:0;font-size:.9rem;text-align:center}
+          .slot.dragover{outline:2px solid #60a5fa}
+          .chip{display:inline-block;padding:.3rem .5rem;border-radius:.5rem;background:#1f2937;color:#e5e7eb;margin:.2rem;cursor:grab}
+        </style>
+        ${[1,2,3,4,5,6].map(s => `
+          <div class="slot" data-slot="${s}">
+            <div>
+              <h4>Slot ${s}</h4>
+              <div>${map.get(s) ? `Route: <b>${map.get(s)}</b>` : `<i>Drop: Route hierher</i>`}</div>
+            </div>
+          </div>
+        `).join("")}
+      `;
+      // Droppable
+      elSlots.querySelectorAll(".slot").forEach(slotEl => {
+        slotEl.addEventListener("dragover", e => { e.preventDefault(); slotEl.classList.add("dragover"); });
+        slotEl.addEventListener("dragleave", () => slotEl.classList.remove("dragover"));
+        slotEl.addEventListener("drop", async e => {
+          e.preventDefault();
+          slotEl.classList.remove("dragover");
+          const route = e.dataTransfer.getData("text/route") || e.dataTransfer.getData("text/plain");
+          const slot = fmtSlot(slotEl.dataset.slot);
+          if (!route || !slot) return;
+          try {
+            await api("assignRouteSlot", { playerId, route, slot });
+            await sync(); // neu zeichnen
+          } catch(err){ console.error(err); alert(err.message); }
+        });
+      });
+    }
+    
+    // --- Drag-Quelle(n) verdrahten: jedes [data-route] wird draggable ---
+    function hydrateRouteChips(root = document) {
+      root.querySelectorAll("[data-route]").forEach(el => {
+        el.setAttribute("draggable", "true");
+        el.classList.add("chip");
+        el.addEventListener("dragstart", e => {
+          const route = el.getAttribute("data-route");
+          e.dataTransfer.setData("text/route", route);
+          e.dataTransfer.setData("text/plain", route);
+        });
+      });
+    }
+    // Beim ersten Lauf einmal global probieren:
+    hydrateRouteChips(document);
+    
+    // --- Teams-Ansicht pro User rendern ---
+    // Erwartung: routeSlots (route->slot), boxes[player_id][route] = {species,caught}
+    function renderTeams(players=[], routeSlots=[], boxes={}) {
+      const slotsByRoute = new Map(routeSlots.map(r => [r.route, r.slot]));
+      const slotList = [1,2,3,4,5,6];
+    
+      const htmlPlayers = players.map(p => {
+        const items = slotList.map(slot => {
+          const route = [...slotsByRoute.entries()].find(([,s]) => s === slot)?.[0];
+          if (!route) return `<div class="tcell"><div class="ghost">—</div></div>`;
+          const mon = boxes[p.id]?.[route];
+          if (!mon) return `<div class="tcell"><div class="route">${route}</div><div class="ghost">kein Mon</div></div>`;
+          return `<div class="tcell"><div class="route">${route}</div><div class="mon">${mon.species}${mon.caught ? "" : " (nicht gefangen)"}</div></div>`;
+        }).join("");
+        return `
+          <div class="player">
+            <div class="pname">Team: ${escapeHtml(p.name)}</div>
+            <div class="trow">${items}</div>
+          </div>
+        `;
+      }).join("");
+    
+      elTeams.innerHTML = `
+        <style>
+          #teams-overview{margin:1rem 0;color:#e5e7eb;background:#0b1220;padding:1rem;border-radius:1rem}
+          #teams-overview .pname{font-weight:700;margin:.25rem 0 .5rem}
+          #teams-overview .trow{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:.5rem}
+          #teams-overview .tcell{border:1px solid #374151;border-radius:.75rem;padding:.5rem;min-height:64px;background:#111827}
+          #teams-overview .route{font-size:.85rem;opacity:.9}
+          #teams-overview .mon{font-size:1rem;margin-top:.25rem}
+          #teams-overview .ghost{opacity:.5}
+        </style>
+        <h3>Team (max. 6) — Übersicht</h3>
+        ${htmlPlayers || "<i>noch keine Spieler online</i>"}
+      `;
+    }
+    
+    function renderLobby(players=[]) {
+      elLobby.innerHTML = `
+        <style>
+          #lobby{margin:1rem 0;color:#e5e7eb;background:#0b1220;padding:1rem;border-radius:1rem}
+          #lobby ul{margin:.5rem 0 0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:.5rem}
+          #lobby li{background:#111827;border:1px solid #374151;border-radius:.75rem;padding:.35rem .6rem}
+          #lobby .join{display:flex;gap:.5rem;margin-top:.5rem}
+          #lobby input{background:#0b1220;border:1px solid #374151;border-radius:.5rem;color:#e5e7eb;padding:.4rem .6rem}
+          #lobby button{border:none;border-radius:.6rem;padding:.45rem .7rem;cursor:pointer;background:#1f2937;color:#e5e7eb}
+        </style>
+        <h3>Lobby</h3>
+        <div>Spieler online: ${players.length}</div>
+        <ul>${players.map(p => `<li>${escapeHtml(p.name)}</li>`).join("")}</ul>
+        <div class="join">
+          <input id="joinName" placeholder="Dein Name" value="${escapeHtml(playerName || "")}">
+          <button id="joinBtn">${playerId ? "Erneut beitreten" : "In die Lobby"}</button>
+        </div>
+      `;
+      elLobby.querySelector("#joinBtn")?.addEventListener("click", async () => {
+        const v = elLobby.querySelector("#joinName").value.trim();
+        if (v) { localStorage.setItem("playerName", v); playerName = v; }
+        await joinLobby();
+        await sync();
+      });
+    }
+    
+    function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]))}
+    
+    // --- Polling: State holen & rendern ---
+    async function sync() {
+      try {
+        const st = await apiGet(); // { players, routeSlots, boxes }
+        renderLobby(st.players || []);
+        renderGlobalSlots(st.routeSlots || []);
+        renderTeams(st.players || [], st.routeSlots || [], st.boxes || {});
+        // erneut Drag-Quellen markieren, falls dein App-Code DOM neu rendert:
+        hydrateRouteChips(document);
+      } catch (e) {
+        console.error("sync failed:", e);
+      }
+    }
+    
+    if (!playerId && playerName) {
+      // Falls Name schon da ist (localStorage), auto-join
+      try { await joinLobby(); } catch (_) {}
+    }
+    setInterval(sync, POLL_MS);
+    await sync();
+    
+    // --- Public Integration Hooks ---
+    // Rufe diese Funktionen aus *deinem* bestehenden Code auf,
+    // wenn ein Spieler ein Mon für eine Route setzt/ändert oder ein Drop auf einen Slot passiert.
+    window.NuzlockeAPI = {
+      async upsertPokemon(route, species, caught=true) {
+        if (!playerId) await joinLobby();
+        await api("upsertPokemon", { playerId, route, species, caught });
+        await sync();
+      },
+      async assignGlobalSlot(route, slot) {
+        if (!playerId) await joinLobby();
+        await api("assignRouteSlot", { playerId, route, slot });
+        await sync();
+      },
+      // optional: manuell triggern
+      async join(name) { playerName = name || playerName; await joinLobby(); await sync(); }
+    };
+    </script>
+<script type="module" src="./multiplayer.js"></script>
+    
 </body>
 </html>
