@@ -1,0 +1,17 @@
+{
+    "name": "netlify-counter",
+    "version": "1.0.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+      "dev": "netlify dev",
+      "start": "netlify dev"
+    },
+    "dependencies": {
+      "@netlify/neon": "0.1.0"
+    },
+    "devDependencies": {
+      "netlify-cli": "^17.0.0"
+    }
+  }
+  
