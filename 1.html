@@ -25,18 +25,14 @@
       background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.00));
       position:sticky; top:0; z-index:10;
     }
-    .brand{
-      display:flex; align-items:center; gap:14px; letter-spacing:.5px;
-    }
+    .brand{ display:flex; align-items:center; gap:14px; letter-spacing:.5px; }
     .logo{ width:44px; height:44px; border-radius:50%; background:
       radial-gradient(circle at 50% 35%, var(--pk-red) 0 34%, #fff 35% 65%, #111 66% 100%);
       box-shadow:0 0 0 3px #fff inset, 0 0 0 6px var(--pk-red) inset, 0 6px 22px rgba(0,0,0,.35);
       position:relative;
     }
     .logo::after{content:""; position:absolute; inset:auto 0 14px 0; height:6px; background:#fff}
-    .title{
-      font-family:"Press Start 2P", monospace; font-size:14px; line-height:1.1; text-shadow:0 2px 0 #000;
-    }
+    .title{ font-family:"Press Start 2P", monospace; font-size:14px; line-height:1.1; text-shadow:0 2px 0 #000; }
     .title small{display:block; color:var(--muted); font-family:Inter; font-weight:600; margin-top:4px}
 
     nav.tabs{ display:flex; gap:8px; flex-wrap:wrap }
@@ -50,7 +46,6 @@
     .tab-btn:hover{ transform:translateY(-1px); background:#0f1a40 }
 
     main{ max-width:1200px; margin:18px auto 64px; padding:0 18px }
-
     .panel{
       display:none; border:1px solid rgba(255,255,255,.12); border-radius:18px; padding:18px; background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.00));
       box-shadow:0 18px 60px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04) inset;
@@ -60,10 +55,7 @@
     .grid{ display:grid; gap:14px }
     .grid.r2c3{ grid-template-columns: 260px 1fr }
 
-    .card{
-      background: #0c1330; border:1px solid rgba(255,255,255,.1); border-radius:16px; padding:14px;
-      box-shadow:0 8px 26px rgba(0,0,0,.35);
-    }
+    .card{ background:#0c1330; border:1px solid rgba(255,255,255,.1); border-radius:16px; padding:14px; box-shadow:0 8px 26px rgba(0,0,0,.35); }
     .card h3{ margin:.2rem 0 .8rem; font-size:14px; letter-spacing:.4px }
 
     .routes-list{ max-height:520px; overflow:auto; padding-right:6px }
@@ -112,14 +104,12 @@
     .slot .meta{ font-size:12px; color:#b0baf0 }
     .slot .actions{ margin-top:6px }
 
-    /* Links */
     .links-table{ width:100%; border-collapse:separate; border-spacing:0 8px }
     .links-table th, .links-table td{ text-align:left; padding:10px 12px }
     .links-table tr{ background:#0b1433; border:1px solid rgba(255,255,255,.12) }
     .links-table tr td:first-child, .links-table tr th:first-child{ border-top-left-radius:12px; border-bottom-left-radius:12px }
     .links-table tr td:last-child, .links-table tr th:last-child{ border-top-right-radius:12px; border-bottom-right-radius:12px }
 
-    /* Login */
     .login-overlay{
       position:fixed; inset:0; background:radial-gradient(800px 400px at 20% 0%, rgba(255,89,95,.25), rgba(0,0,0,.65) 40%, rgba(0,0,0,.9) 100%);
       display:grid; place-items:center; z-index:99;
@@ -127,27 +117,27 @@
     .login-card{ width:min(560px, 92vw); background:#0b1433; border:1px solid rgba(255,255,255,.15); border-radius:18px; padding:20px; text-align:center; box-shadow:0 24px 80px rgba(0,0,0,.45) }
     .login-card h1{ font-family:"Press Start 2P"; font-size:20px; margin:10px 0 18px }
     .row.center{ justify-content:center }
-
     .helper{ color:#9fb1ff; font-size:12px }
     .pill{ display:inline-flex; align-items:center; gap:10px; border:1px solid rgba(255,255,255,.12); background:#0d153a; padding:10px 12px; border-radius:12px }
     .pill b{ color:#fff }
-
     .footer{ margin-top:14px; color:#91a3ea; font-size:12px }
     .footer a{ color:#fff }
 
-    @media (max-width:900px){ .grid.r2c3{ grid-template-columns: 1fr } .encounter{ grid-template-columns:1fr } .team-wrap{ grid-template-columns: repeat(3, 1fr) } }
-      .login-overlay[hidden]{ display:none !important }
-      .status-note{ color:var(--muted); font-weight:800 }
-  .drawer{ margin-top:12px }
-    .poke-card.selected{ outline:2px solid var(--ring) }
-    .pick-hint{ font-size:12px; color:var(--pk-yellow) }
-  .players{ display:grid; gap:10px }
-    .player{ display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border:1px solid rgba(255,255,255,.12); border-radius:12px; background:#0b1433 }
-    .player .name{ font-weight:800 }
-    .player .meta{ color:#9fb1ff; font-size:12px }
+    @media (max-width:900px){
+      .grid.r2c3{ grid-template-columns: 1fr }
+      .encounter{ grid-template-columns:1fr }
+      .team-wrap{ grid-template-columns: repeat(3, 1fr) }
+    }
+    .login-overlay[hidden]{ display:none !important }
+    .status-note{ color:var(--muted); font-weight:800 }
     .drawer{ margin-top:12px }
     .poke-card.selected{ outline:2px solid var(--ring) }
     .pick-hint{ font-size:12px; color:var(--pk-yellow) }
+
+    .players{ display:grid; gap:10px }
+    .player{ display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border:1px solid rgba(255,255,255,.12); border-radius:12px; background:#0b1433 }
+    .player .name{ font-weight:800 }
+    .player .meta{ color:#9fb1ff; font-size:12px }
   </style>
 </head>
 <body>
@@ -162,7 +152,6 @@
       <button class="tab-btn" data-tab="team">team</button>
       <button class="tab-btn" data-tab="allteams">all Teams</button>
       <button class="tab-btn" data-tab="lobby">Lobby</button>
-      
     </nav>
   </header>
 
@@ -178,7 +167,6 @@
           </div>
           <div class="routes-list" id="routesList"></div>
         </aside>
-
         <div class="card">
           <h3>Encounter</h3>
           <div id="encounterPane">
@@ -190,7 +178,6 @@
 
     <!-- BOX -->
     <section class="panel" id="panel-box">
-     
       <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:10px">
         <h3 style="margin:0">Pokémon Box</h3>
         <div class="row">
@@ -202,12 +189,13 @@
       <div class="box-grid" id="boxGrid"></div>
     </section>
 
-    <!-- SELECT -->
+    <!-- SELECT (Team) -->
     <section class="panel" id="panel-team">
-    
       <h3>Team (max. 6)</h3>
       <div class="team-wrap" id="teamWrap"></div>
-      <p class="helper pick-hint" id="pickHint" style="margin-top:8px; display:none">Auswahl aktiv: Klick einen Slot, um das Pokémon zu platzieren. (Oder ziehe es per Drag & Drop.)</p>
+      <p class="helper pick-hint" id="pickHint" style="margin-top:8px; display:none">
+        Auswahl aktiv: Klick einen Slot, um das Pokémon zu platzieren. (Oder ziehe es per Drag & Drop.)
+      </p>
 
       <div class="card drawer">
         <h3>Box (Schnellzugriff)</h3>
@@ -220,6 +208,12 @@
       </div>
     </section>
 
+    <!-- ALL TEAMS -->
+    <section class="panel" id="panel-allteams">
+      <h3>Alle Teams</h3>
+      <div id="nz-allteams"></div>
+    </section>
+
     <!-- LOBBY -->
     <section class="panel" id="panel-lobby">
       <div id="nz-lobby"></div>
@@ -228,12 +222,6 @@
         <span class="pill">Spieler: <b id="playerNameBadge">–</b></span>
       </div>
       <div class="players" id="playersList"></div>
-      <p class="helper" style="margin-top:8px">Multiplayer folgt. Hier siehst du später alle Spieler, die der Lobby beigetreten sind.</p>
-    </section>
- <!-- ALL TEAMS -->
-    <section class="panel" id="panel-allteams">
-      <div id="nz-allteams"></div>
-      <h1>hello</h1>
     </section>
   </main>
 
@@ -246,705 +234,13 @@
         <input id="trainerName" type="text" placeholder="Dein Trainername" />
         <button class="btn ok" id="startBtn">In die Lobby</button>
       </div>
-      <p class="footer">Tipp: Später fügen wir Online-Multiplayer hinzu. 🎮</p>
+      <p class="footer">Multiplayer ist aktiv – Lobby-Tab nutzen. 🎮</p>
     </div>
   </div>
   
 
-  <script>
-    // ---------- Utilities ----------
-    const $ = sel => document.querySelector(sel);
-    const $$ = sel => Array.from(document.querySelectorAll(sel));
-    const SPRITE = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
-    const now = () => new Date().toISOString();
-    const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
-
-    // ---------- Persistence ----------
-    const LS_KEY = 'nuzlocke_state_v1';
-    const POKEDEX_KEY = 'nuz_pokedex_v2';
-
-    const DEFAULT_ROUTES = [
-      'Route 1','Route 2','Route 3','Route 4','Route 5','Route 6','Viridian Forest','Pewter City','Mt. Moon','Cerulean City','Route 24','Route 25'
-    ];
-
-    const EMPTY_STATE = () => ({
-      user: { name: '' },
-      routes: DEFAULT_ROUTES.map((n, i) => ({ id: 'r'+(i+1), name:n, encounter: { status:'pending', pokemonId:null, pokemonName:'', sprite:null, nickname:'', updatedAt:null } })),
-      box: [], // mons: {uid,id,name,sprite,routeName,nickname,caughtAt,isInTeam:false}
-      team: [null,null,null,null,null,null], // stores uid of mon
-      links: { // slotIndex: { partnerName, partnerSlot, partnerPokemon }
-        0:null,1:null,2:null,3:null,4:null,5:null
-      }
-    });
-
-    let state = null;
-    let selectedFromBoxUid = null; // Auswahl aus Box für Klick-zu-Slot
-
-    function save(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
-    function load(){ const s = localStorage.getItem(LS_KEY); state = s ? JSON.parse(s) : EMPTY_STATE(); }
-
-    // ---------- Pokedex (for search/autocomplete) ----------
-    let pokedex = [];
-    async function ensurePokedex(){
-      const cached = localStorage.getItem(POKEDEX_KEY);
-      if(cached){ pokedex = JSON.parse(cached); return; }
-      try{
-        const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1025');
-        const data = await res.json();
-        pokedex = data.results.map(x => {
-          const m = x.url.match(/pokemon\/(\d+)\/?$/);
-          return { id: m?Number(m[1]):null, name: x.name };
-        }).filter(x=>x.id);
-        localStorage.setItem(POKEDEX_KEY, JSON.stringify(pokedex));
-      }catch(e){
-        // Fallback small list
-        pokedex = [
-          {id:1,name:'bulbasaur'},{id:4,name:'charmander'},{id:7,name:'squirtle'},{id:10,name:'caterpie'},{id:16,name:'pidgey'},{id:19,name:'rattata'},{id:25,name:'pikachu'},{id:35,name:'clefairy'},{id:39,name:'jigglypuff'},{id:52,name:'meowth'},{id:54,name:'psyduck'},{id:63,name:'abra'},{id:66,name:'machop'},{id:74,name:'geodude'},{id:77,name:'ponyta'},{id:81,name:'magnemite'},{id:92,name:'gastly'},{id:95,name:'onix'},{id:98,name:'krabby'},{id:116,name:'horsea'},{id:129,name:'magikarp'},{id:133,name:'eevee'},{id:143,name:'snorlax'},{id:147,name:'dratini'}
-        ];
-      }
-    }
-
-    function toTitle(name){ return name ? name.charAt(0).toUpperCase() + name.slice(1) : ''; }
-
-    // ---------- UI Helpers ----------
-    function setActiveTab(tab){
-      $$('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
-      $$('.panel').forEach(p=>p.classList.toggle('active', p.id === `panel-${tab}`));
-    }
-
-    // ---------- Routes Rendering ----------
-    let currentRouteId = null;
-
-    function renderRoutes(){
-      const wrap = $('#routesList');
-      wrap.innerHTML = '';
-      state.routes.forEach(rt => {
-        const div = document.createElement('div');
-        div.className = 'route-item' + (currentRouteId===rt.id ? ' active' : '');
-        const status = rt.encounter.status;
-        const statusText = status==='pending'?'(offen)':status==='caught'?'(gefangen)':'(fehlversuch)';
-        div.innerHTML = `
-          <span>${rt.name} <span class="status-note">${statusText}</span></span>
-        `;
-        div.onclick = ()=>{ currentRouteId = rt.id; renderRoutes(); renderEncounter(); };
-        wrap.appendChild(div);
-      });
-    }
-
-    function renderEncounter(){
-      const pane = $('#encounterPane');
-      const rt = state.routes.find(r=>r.id===currentRouteId);
-      if(!rt){ pane.innerHTML = '<p class="helper">Wähle links eine Route.</p>'; return; }
-      const e = rt.encounter;
-
-      const listHtml = pokedex.slice(0,1025).map(p=>`<option value="${toTitle(p.name)}" data-id="${p.id}"></option>`).join('');
-      const hasMon = !!e.pokemonId;
-
-      pane.innerHTML = `
-        <div class="encounter">
-          <div>
-            <div class="preview">
-              <div class="sprite" id="encSprite">${hasMon?`<img alt="${toTitle(e.pokemonName)}" src="${e.sprite}">`:'—'}</div>
-              <div>
-                <div class="row">
-                  <input list="pokedexList" id="pokeSearch" type="search" placeholder="Pokémon wählen…" value="${hasMon?toTitle(e.pokemonName):''}">
-                  <datalist id="pokedexList">${listHtml}</datalist>
-                  <input id="nickname" type="text" placeholder="Spitzname (optional)" value="${e.nickname||''}">
-                </div>
-                <div class="row" style="margin-top:10px">
-                  <button class="btn ok" id="btnCaught">Gefangen</button>
-                  <button class="btn bad" id="btnFailed">Fehlversuch</button>
-                  <button class="btn" id="btnClear">Zurücksetzen</button>
-                </div>
-              </div>
-            </div>
-            <p class="helper" style="margin-top:10px">Status: <b>${e.status==='pending'?'Offen':e.status==='caught'?'Gefangen':'Fehlversuch'}</b> ${e.updatedAt?`• zuletzt aktualisiert: ${new Date(e.updatedAt).toLocaleString()}`:''}</p>
-          </div>
-          <div>
-            <div class="card">
-              <h3>Regeln & Hinweise</h3>
-              <ul>
-                <li>Nur das <b>erste Pokémon</b> der Route zählt.</li>
-                <li>Markiere es als <b>Gefangen</b>, um es in die Box zu legen.</li>
-                <li>Du kannst einen Spitznamen vergeben.</li>
-                <li>Ziehe das Pokémon später in einen Team-Slot.</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      `;
-
-      // Wire actions
-      const search = $('#pokeSearch');
-      const nick = $('#nickname');
-      const btnCaught = $('#btnCaught');
-      const btnFailed = $('#btnFailed');
-      const btnClear = $('#btnClear');
-
-      function resolvePokemon(str){
-        if(!str) return null;
-        const name = str.trim().toLowerCase();
-        let found = pokedex.find(p=>p.name===name);
-        if(!found){
-          // also accept exact Title case
-          found = pokedex.find(p=>toTitle(p.name)===str.trim());
-        }
-        return found || null;
-      }
-
-      function updatePreview(){
-        const chosen = resolvePokemon(search.value);
-        const sprite = chosen? SPRITE(chosen.id) : null;
-        $('#encSprite').innerHTML = chosen? `<img alt="${toTitle(chosen.name)}" src="${sprite}">` : '—';
-      }
-
-      search.addEventListener('input', updatePreview);
-
-      btnCaught.onclick = ()=>{
-        const chosen = resolvePokemon(search.value);
-        if(!chosen) { alert('Bitte ein gültiges Pokémon auswählen.'); return; }
-        rt.encounter = {
-          status:'caught', pokemonId: chosen.id, pokemonName: chosen.name, sprite: SPRITE(chosen.id), nickname: nick.value.trim(), updatedAt: now()
-        };
-        // Add to box if not already there from this route
-        const exists = state.box.find(m=>m.routeName===rt.name);
-        if(!exists){
-          state.box.push({ uid:uid(), id:chosen.id, name:chosen.name, sprite:SPRITE(chosen.id), routeName:rt.name, nickname:nick.value.trim(), caughtAt:now(), isInTeam:false });
-        }
-        save(); renderRoutes(); renderEncounter(); renderBox(); renderBoxDrawer(); renderRouteGroups();
-        if (window.NZ) {
-  window.NZ.upsertPokemon(rt.name, toTitle(chosen.name), true).catch(console.error);
-}
-      };
-
-      btnFailed.onclick = ()=>{
-        rt.encounter = { status:'failed', pokemonId:null, pokemonName:'', sprite:null, nickname:'', updatedAt: now() };
-        // Remove from box if it existed for this route and not in team
-        const idx = state.box.findIndex(m=>m.routeName===rt.name && !m.isInTeam);
-        if(idx>=0){ state.box.splice(idx,1); }
-        save(); renderRoutes(); renderEncounter(); renderBox(); renderBoxDrawer(); renderRouteGroups();
-      };
-
-      btnClear.onclick = ()=>{
-        rt.encounter = { status:'pending', pokemonId:null, pokemonName:'', sprite:null, nickname:'', updatedAt: now() };
-        // Clear related box entry if not in team
-        const idx = state.box.findIndex(m=>m.routeName===rt.name && !m.isInTeam);
-        if(idx>=0){ state.box.splice(idx,1); }
-        save(); renderRoutes(); renderEncounter(); renderBox(); renderBoxDrawer(); renderRouteGroups();
-      };
-
-      updatePreview();
-    }
-
-    // ---------- Box Rendering ----------
-    function renderBoxDrawer(){
-      const grid = $('#boxDrawer');
-      if(!grid) return;
-      grid.innerHTML = '';
-      state.box.forEach(mon =>{
-        const card = document.createElement('div');
-        card.className = 'poke-card';
-        card.draggable = true;
-        card.dataset.uid = mon.uid;
-        card.setAttribute('data-route', mon.routeName);
-        card.innerHTML = `
-          <div class="poke-top">
-            <div>
-              <div class="poke-name">#${mon.id} ${toTitle(mon.name)} ${mon.nickname?`“${mon.nickname}”`:''}</div>
-              <div class="tag">${mon.routeName}</div>
-            </div>
-          </div>
-          <div class="poke-sprite"><img alt="${toTitle(mon.name)}" src="${mon.sprite}"></div>
-          ${mon.isInTeam?`<div class="ribbon">Im Team</div>`:''}
-        `;
-        card.addEventListener('dragstart', e=>{ card.classList.add('dragging'); e.dataTransfer.setData('text/plain', mon.uid); 
-        e.dataTransfer.setData('text/route', mon.routeName); // <— wichtig für Multiplayer-Drag
-        });
-        card.addEventListener('dragend', ()=>card.classList.remove('dragging'));
-        card.addEventListener('click', ()=>{
-          selectedFromBoxUid = mon.uid;
-          renderTeam();
-          const el = document.querySelector(`#boxDrawer [data-uid="${mon.uid}"]`);
-          if(el){ el.classList.add('selected'); setTimeout(()=>el.classList.remove('selected'), 1000); }
-          $('#pickHint').style.display = 'block';
-        });
-        grid.appendChild(card);
-      });
-    }
-
-    // ---------- Box Rendering (Box Tab) ----------
-    function renderBox(){
-      const grid = $('#boxGrid');
-      if(!grid) return;
-      grid.innerHTML = '';
-      state.box.forEach(mon =>{
-        const card = document.createElement('div');
-        card.className = 'poke-card';
-        card.draggable = true;
-        card.dataset.uid = mon.uid;
-        card.setAttribute('data-route', mon.routeName); // <— Route fürs Multiplayer-Drag
-        card.innerHTML = `
-          <div class="poke-top">
-            <div>
-              <div class="poke-name">#${mon.id} ${toTitle(mon.name)} ${mon.nickname?`“${mon.nickname}”`:''}</div>
-              <div class="tag">${mon.routeName}</div>
-            </div>
-            <button class="btn bad" data-remove>Entfernen</button>
-          </div>
-          <div class="poke-sprite"><img alt="${toTitle(mon.name)}" src="${mon.sprite}"></div>
-          ${mon.isInTeam?`<div class="ribbon">Im Team</div>`:''}
-        `;
-        card.addEventListener('dragstart', e=>{
-  card.classList.add('dragging');
-  e.dataTransfer.setData('text/plain', mon.uid);
-  e.dataTransfer.setData('text/route', mon.routeName); // <— wichtig
-});
-        card.addEventListener('dragend', ()=>card.classList.remove('dragging'));
-        card.querySelector('[data-remove]').onclick = (ev)=>{
-          ev.stopPropagation();
-          if(mon.isInTeam){ alert('Dieses Pokémon ist im Team. Entferne es zuerst aus dem Team.'); return; }
-          const i = state.box.findIndex(x=>x.uid===mon.uid); if(i>=0) state.box.splice(i,1);
-          save(); renderBox(); renderTeam(); renderBoxDrawer(); renderRouteGroups();
-        };
-        // Klick: zum Team wechseln und Auswahl aktivieren
-        card.addEventListener('click', (ev)=>{
-          if(ev.target.closest('[data-remove]')) return;
-          selectedFromBoxUid = mon.uid;
-          setActiveTab('team');
-          renderTeam(); renderBoxDrawer(); renderRouteGroups();
-          const el = document.querySelector(`#boxDrawer [data-uid="${mon.uid}"]`);
-          if(el){ el.classList.add('selected'); el.scrollIntoView({behavior:'smooth', block:'center'}); setTimeout(()=>el.classList.remove('selected'), 1000); }
-          $('#pickHint').style.display = 'block';
-        });
-        grid.appendChild(card);
-      });
-    }
-
-    // ---------- Team Rendering ----------
-    function renderTeam(){
-      const wrap = $('#teamWrap');
-      wrap.innerHTML = '';
-      for(let i=0;i<6;i++){
-        const uidRef = state.team[i];
-        const mon = uidRef ? state.box.find(m=>m.uid===uidRef) : null;
-        const slot = document.createElement('div');
-        slot.className = 'slot';
-        slot.dataset.index = i;
-        slot.innerHTML = mon ? `
-          <div class="slot-inner">
-            <img alt="${toTitle(mon.name)}" src="${mon.sprite}">
-            <div class="meta">#${mon.id} ${toTitle(mon.name)} ${mon.nickname?`“${mon.nickname}”`:''}</div>
-            <div class="actions">
-              <button class="btn" data-remove>Aus Team</button>
-            </div>
-          </div>
-        ` : `
-          <div class="slot-inner">
-            <div>(leer)</div>
-            <div class="meta">Ziehe ein Pokémon hierher oder klicke zur Auswahl</div>
-          </div>
-        `;
-
-        // Drag & Drop
-        slot.addEventListener('dragover', e=>{ e.preventDefault(); slot.classList.add('over'); });
-        slot.addEventListener('dragleave', ()=>slot.classList.remove('over'));
-        slot.addEventListener('drop', async e => {
-  e.preventDefault(); 
-  slot.classList.remove('over');
-
-  const uid = e.dataTransfer.getData('text/plain');
-  const mon = state.box.find(m => m.uid === uid);
-  if (!mon) return;
-
-  const already = state.team.findIndex(u => u === uid);
-  if (already >= 0) {
-    const prev = state.team[i];
-    state.team[already] = prev || null;
-  }
-
-  const prevUid = state.team[i];
-  if (prevUid) {
-    const pm = state.box.find(m => m.uid === prevUid);
-    if (pm) pm.isInTeam = false;
-  }
-
-  state.team[i] = uid;
-  mon.isInTeam = true;
-  selectedFromBoxUid = null;
-
-  save(); 
-  renderTeam(); 
-  renderBox(); 
-  renderBoxDrawer(); 
-  renderRouteGroups();
-  $('#pickHint').style.display = 'none';
-
-  // 👇 NEU: globales Mapping für alle in der Lobby setzen
-  try {
-    const route = mon?.routeName || e.dataTransfer.getData('text/route'); // Fallback
-    if (window.NZ && route) {
-      await window.NZ.assignGlobalSlot(route, i + 1);
-    }
-  } catch (err) {
-    console.error(err);
-  }
-});
-
-
-        // Click-to-place (wenn Auswahl aktiv)
-        slot.addEventListener('click', ()=>{
-          if(!selectedFromBoxUid) return;
-          const pick = state.box.find(m=>m.uid===selectedFromBoxUid);
-          if(!pick) return;
-          const already = state.team.findIndex(u=>u===pick.uid);
-          if(already>=0){
-            const prev = state.team[i];
-            state.team[already] = prev || null;
-          }
-          const prevUid = state.team[i];
-          if(prevUid){ const pm = state.box.find(m=>m.uid===prevUid); if(pm) pm.isInTeam = false; }
-          state.team[i] = pick.uid; pick.isInTeam = true; selectedFromBoxUid = null;
-          save(); renderTeam(); renderBox(); renderBoxDrawer(); renderRouteGroups();
-          $('#pickHint').style.display = 'none';
-        });
-
-        // Remove button
-        if(mon){
-          slot.querySelector('[data-remove]').onclick = ()=>{
-            state.team[i] = null; mon.isInTeam = false; save(); renderTeam(); renderBox(); renderBoxDrawer(); renderRouteGroups();
-          };
-        }
-
-        wrap.appendChild(slot);
-      }
-    }
-
-    function renderRouteGroups(){
-      const holder = $('#routeGroups');
-      if(!holder) return;
-      holder.innerHTML = '';
-      const groups = {};
-      state.team.forEach(uid=>{
-        if(!uid) return; const mon = state.box.find(m=>m.uid===uid); if(!mon) return;
-        groups[mon.routeName] = groups[mon.routeName] || []; groups[mon.routeName].push(mon);
-      });
-      const names = Object.keys(groups);
-      if(names.length===0){ holder.innerHTML = '<p class="helper">Noch keine Team-Pokémon – keine Route-Verknüpfungen.</p>'; return; }
-      names.sort().forEach(rn=>{
-        const mons = groups[rn];
-        const div = document.createElement('div');
-        div.className = 'row';
-        const list = mons.map(m=>`#${m.id} ${toTitle(m.name)}${m.nickname?` “${m.nickname}”`:''}`).join(', ');
-        div.innerHTML = `<b>${rn}:</b> <span style="margin-left:6px">${list}</span>`;
-        holder.appendChild(div);
-      });
-    }
-
-    // ---------- Lobby (placeholder for future multiplayer) ----------
-    function renderLobby(){
-      const list = $('#playersList');
-      if(!list) return;
-      list.innerHTML = '';
-      const me = document.createElement('div');
-      me.className = 'player';
-      me.innerHTML = `<span class="name">${state.user?.name || 'Unbekannt'}</span><span class="meta">(Host)</span>`;
-      list.appendChild(me);
-    }
-
-    // ---------- Import / Export ----------
-    function exportData(){
-      const blob = new Blob([JSON.stringify(state,null,2)], {type:'application/json'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href=url; a.download = `nuzlocke_${(state.user.name||'trainer').toLowerCase()}_${Date.now()}.json`; a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    async function importData(file){
-      const text = await file.text();
-      try{
-        const obj = JSON.parse(text);
-        // very light validation
-        if(!obj || !obj.user || !obj.routes || !obj.box || !obj.team) throw new Error('Ungültiges Format');
-        state = obj; save();
-        // re-render all
-        renderRoutes(); renderEncounter(); renderBox(); renderTeam(); renderBoxDrawer(); renderRouteGroups(); renderLobby();
-        alert('Import erfolgreich.');
-      }catch(e){ alert('Fehler beim Import: '+ e.message); }
-    }
-
-    // ---------- Login ----------
-    function ensureLogin(){
-      const overlay = $('#loginOverlay');
-      const shouldShow = !state.user || !state.user.name;
-      if(overlay){
-        overlay.hidden = !shouldShow;
-        overlay.style.display = shouldShow ? 'grid' : 'none';
-        overlay.setAttribute('aria-hidden', String(!shouldShow));
-      }
-      $('#playerNameBadge').textContent = state.user?.name || '–';
-    }
-
-    // ---------- Boot ----------
-    function boot(){
-      load();
-      // Tabs
-      $$('#tabs .tab-btn').forEach(btn=> btn.addEventListener('click',()=> setActiveTab(btn.dataset.tab)) );
-
-      // Routes
-      $('#addRouteBtn').onclick = ()=>{
-        const name = $('#addRouteName').value.trim();
-        if(!name) return;
-        state.routes.push({ id: 'r'+uid(), name, encounter:{ status:'pending', pokemonId:null, pokemonName:'', sprite:null, nickname:'', updatedAt:null } });
-        save(); $('#addRouteName').value=''; renderRoutes();
-      };
-
-      // Export / Import
-      $('#exportBtn').onclick = exportData;
-      $('#importFile').addEventListener('change', e=>{ const f=e.target.files[0]; if(f) importData(f); e.target.value=''; });
-
-      // Login actions (attach immediately so the button works even while data loads)
-      $('#startBtn').onclick = ()=>{
-        const name = $('#trainerName').value.trim();
-        if(!name) return alert('Bitte gib einen Namen ein.');
-        state.user.name = name; save(); ensureLogin();
-      };
-
-      // First paint without waiting for the Pokédex
-      renderRoutes(); renderEncounter(); renderBox(); renderTeam(); renderBoxDrawer(); renderRouteGroups(); renderLobby(); ensureLogin();
-
-      // Load Pokédex in the background, then refresh encounter UI
-      ensurePokedex()
-        .then(()=>{ renderEncounter(); save(); })
-        .catch(()=>{ /* fallback already handled in ensurePokedex */ });
-    }
-
-    boot();
-  </script>
-  <script type="module">
-    const API = "/api/nuzlocke";           // via netlify.toml-Redirect
-    const HEARTBEAT_MS = 15000;
-    const POLL_MS = 5000;
-    let playerId = localStorage.getItem("playerId") || "";
-    let playerName = localStorage.getItem("playerName") || "";
-    
-    const elLobby = document.querySelector("#lobby") || (() => {
-      const d = document.createElement("div"); d.id = "lobby"; document.body.appendChild(d); return d;
-    })();
-    const elTeams = document.querySelector("#allteams") || (() => {
-      const d = document.createElement("div"); d.id = "allteams"; document.body.appendChild(d); return d;
-
-    })();
-    const elSlots = document.querySelector("#global-slots") || (() => {
-      const d = document.createElement("div"); d.id = "global-slots"; document.body.appendChild(d); return d;
-    })();
-    
-    // --- Helpers ---
-    async function api(action, payload={}) {
-      const r = await fetch(API, {
-        method: "POST",
-        headers: { "content-type":"application/json" },
-        body: JSON.stringify({ action, ...payload })
-      });
-      const t = await r.text();
-      let j; try { j = JSON.parse(t) } catch { j = { error: t } }
-      if (!r.ok || j.error) throw new Error(j.error || `HTTP ${r.status}`);
-      return j;
-    }
-    async function apiGet() {
-  const code = (new URL(location.href)).searchParams.get('code') || localStorage.getItem('lobbyCode') || '';
-  // Besser: POST
-  const r = await fetch('/api/nuzlocke', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ action: 'list', code })
-  });
-  if (!r.ok) {
-    const t = await r.text();
-    throw new Error(`HTTP ${r.status} ${t}`);
-  }
-  return r.json();
-}
-
-    function fmtSlot(s){ return Number(s) >= 1 && Number(s) <= 6 ? Number(s) : null; }
-    function ensureNamePrompt() {
-      if (!playerName) {
-        playerName = prompt("Dein Spielername?")?.trim() || "";
-        if (playerName) localStorage.setItem("playerName", playerName);
-      }
-    }
-    
-    // --- Lobby Join + Heartbeat ---
-    async function joinLobby() {
-      ensureNamePrompt();
-      if (!playerName) return;
-      const j = await api("join", { name: playerName });
-      playerId = j.player.id;
-      localStorage.setItem("playerId", playerId);
-    }
-    async function heartbeat() {
-      if (!playerId) return;
-      await api("heartbeat", { playerId });
-    }
-    setInterval(heartbeat, HEARTBEAT_MS);
-    
-    // --- Global Slots UI (1..6, Drop-Ziele) ---
-    function renderGlobalSlots(routeSlots=[]) {
-      const map = new Map(routeSlots.map(r => [r.slot, r.route]));
-      elSlots.innerHTML = `
-        <style>
-          #global-slots{display:grid;grid-template-columns:repeat(6,minmax(100px,1fr));gap:.75rem;margin:1rem 0}
-          .slot{border:1px dashed #9ca3af;border-radius:.75rem;min-height:72px;display:flex;align-items:center;justify-content:center;padding:.5rem;background:#0b1220;color:#e5e7eb}
-          .slot h4{margin:0;font-size:.9rem;text-align:center}
-          .slot.dragover{outline:2px solid #60a5fa}
-          .chip{display:inline-block;padding:.3rem .5rem;border-radius:.5rem;background:#1f2937;color:#e5e7eb;margin:.2rem;cursor:grab}
-        </style>
-        ${[1,2,3,4,5,6].map(s => `
-          <div class="slot" data-slot="${s}">
-            <div>
-              <h4>Slot ${s}</h4>
-              <div>${map.get(s) ? `Route: <b>${map.get(s)}</b>` : `<i>Drop: Route hierher</i>`}</div>
-            </div>
-          </div>
-        `).join("")}
-      `;
-      // Droppable
-      elSlots.querySelectorAll(".slot").forEach(slotEl => {
-        slotEl.addEventListener("dragover", e => { e.preventDefault(); slotEl.classList.add("dragover"); });
-        slotEl.addEventListener("dragleave", () => slotEl.classList.remove("dragover"));
-        slotEl.addEventListener("drop", async e => {
-          e.preventDefault();
-          slotEl.classList.remove("dragover");
-          const route = e.dataTransfer.getData("text/route") || e.dataTransfer.getData("text/plain");
-          const slot = fmtSlot(slotEl.dataset.slot);
-          if (!route || !slot) return;
-          try {
-            await api("assignRouteSlot", { playerId, route, slot });
-            await sync(); // neu zeichnen
-          } catch(err){ console.error(err); alert(err.message); }
-        });
-      });
-    }
-    
-    // --- Drag-Quelle(n) verdrahten: jedes [data-route] wird draggable ---
-    function hydrateRouteChips(root = document) {
-      root.querySelectorAll("[data-route]").forEach(el => {
-        el.setAttribute("draggable", "true");
-        el.classList.add("chip");
-        el.addEventListener("dragstart", e => {
-          const route = el.getAttribute("data-route");
-          e.dataTransfer.setData("text/route", route);
-          e.dataTransfer.setData("text/plain", route);
-        });
-      });
-    }
-    // Beim ersten Lauf einmal global probieren:
-    hydrateRouteChips(document);
-    
-    // --- Teams-Ansicht pro User rendern ---
-    // Erwartung: routeSlots (route->slot), boxes[player_id][route] = {species,caught}
-    function renderTeams(players=[], routeSlots=[], boxes={}) {
-      const slotsByRoute = new Map(routeSlots.map(r => [r.route, r.slot]));
-      const slotList = [1,2,3,4,5,6];
-    
-      const htmlPlayers = players.map(p => {
-        const items = slotList.map(slot => {
-          const route = [...slotsByRoute.entries()].find(([,s]) => s === slot)?.[0];
-          if (!route) return `<div class="tcell"><div class="ghost">—</div></div>`;
-          const mon = boxes[p.id]?.[route];
-          if (!mon) return `<div class="tcell"><div class="route">${route}</div><div class="ghost">kein Mon</div></div>`;
-          return `<div class="tcell"><div class="route">${route}</div><div class="mon">${mon.species}${mon.caught ? "" : " (nicht gefangen)"}</div></div>`;
-        }).join("");
-        return `
-          <div class="player">
-            <div class="pname">Team: ${escapeHtml(p.name)}</div>
-            <div class="trow">${items}</div>
-          </div>
-        `;
-      }).join("");
-    
-      elTeams.innerHTML = `
-        <style>
-          #allteams{margin:1rem 0;color:#e5e7eb;background:#0b1220;padding:1rem;border-radius:1rem}
-          #allteams .pname{font-weight:700;margin:.25rem 0 .5rem}
-          #allteams .trow{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:.5rem}
-          #allteams .tcell{border:1px solid #374151;border-radius:.75rem;padding:.5rem;min-height:64px;background:#111827}
-          #allteams .route{font-size:.85rem;opacity:.9}
-          #allteams .mon{font-size:1rem;margin-top:.25rem}
-          #allteams .ghost{opacity:.5}
-        </style>
-        <h3>Team (max. 6) — Übersicht</h3>
-        ${htmlPlayers || "<i>noch keine Spieler online</i>"}
-      `;
-    }
-    
-    function renderLobby(players=[]) {
-      elLobby.innerHTML = `
-        <style>
-          #lobby{margin:1rem 0;color:#e5e7eb;background:#0b1220;padding:1rem;border-radius:1rem}
-          #lobby ul{margin:.5rem 0 0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:.5rem}
-          #lobby li{background:#111827;border:1px solid #374151;border-radius:.75rem;padding:.35rem .6rem}
-          #lobby .join{display:flex;gap:.5rem;margin-top:.5rem}
-          #lobby input{background:#0b1220;border:1px solid #374151;border-radius:.5rem;color:#e5e7eb;padding:.4rem .6rem}
-          #lobby button{border:none;border-radius:.6rem;padding:.45rem .7rem;cursor:pointer;background:#1f2937;color:#e5e7eb}
-        </style>
-        <h3>Lobby</h3>
-        <div>Spieler online: ${players.length}</div>
-        <ul>${players.map(p => `<li>${escapeHtml(p.name)}</li>`).join("")}</ul>
-        <div class="join">
-          <input id="joinName" placeholder="Dein Name" value="${escapeHtml(playerName || "")}">
-          <button id="joinBtn">${playerId ? "Erneut beitreten" : "In die Lobby"}</button>
-        </div>
-      `;
-      elLobby.querySelector("#joinBtn")?.addEventListener("click", async () => {
-        const v = elLobby.querySelector("#joinName").value.trim();
-        if (v) { localStorage.setItem("playerName", v); playerName = v; }
-        await joinLobby();
-        await sync();
-      });
-    }
-    
-    function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]))}
-    
-    // --- Polling: State holen & rendern ---
-    async function sync() {
-      try {
-        const st = await apiGet(); // { players, routeSlots, boxes }
-        renderLobby(st.players || []);
-        renderGlobalSlots(st.routeSlots || []);
-        renderTeams(st.players || [], st.routeSlots || [], st.boxes || {});
-        // erneut Drag-Quellen markieren, falls dein App-Code DOM neu rendert:
-        hydrateRouteChips(document);
-      } catch (e) {
-        console.error("sync failed:", e);
-      }
-    }
-    
-    if (!playerId && playerName) {
-      // Falls Name schon da ist (localStorage), auto-join
-      try { await joinLobby(); } catch (_) {}
-    }
-    setInterval(sync, POLL_MS);
-    await sync();
-    
-    // --- Public Integration Hooks ---
-    // Rufe diese Funktionen aus *deinem* bestehenden Code auf,
-    // wenn ein Spieler ein Mon für eine Route setzt/ändert oder ein Drop auf einen Slot passiert.
-    window.NuzlockeAPI = {
-      async upsertPokemon(route, species, caught=true) {
-        if (!playerId) await joinLobby();
-        await api("upsertPokemon", { playerId, route, species, caught });
-        await sync();
-      },
-      async assignGlobalSlot(route, slot) {
-        if (!playerId) await joinLobby();
-        await api("assignRouteSlot", { playerId, route, slot });
-        await sync();
-      },
-      // optional: manuell triggern
-      async join(name) { playerName = name || playerName; await joinLobby(); await sync(); }
-    };
-    </script>
-<script type="module" src="./multiplayer.js"></script>
+  <script type="module" src="./nuz.js"></script>
+<script type="module" src="./multiplayer2.js"></script>
     
 </body>
 </html>
