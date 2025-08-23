@@ -141,6 +141,7 @@ async function assignRouteSlot({ code, playerId, player, route, slot }) {
     const pid = Number(must(playerId ?? player, "playerId"));
     const rt = normRoute(must(route, "route"));
     await sql`DELETE FROM route_slots WHERE code=${cd} AND player_id=${playerId} AND route=${rt}`;
+    //await sql`DELETE FROM route_slots WHERE code='ARSCHWASSE' AND player_id='f16b614d-87d3-4483-9bea-01e2eca6589f-1755968321290' AND route='Route 3'`;
     return { ok: true };
   }
   

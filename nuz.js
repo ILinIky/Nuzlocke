@@ -9,7 +9,7 @@ const SPRITE = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/s
 const now = () => new Date().toISOString();
 const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 const toTitle = name => name ? name.charAt(0).toUpperCase() + name.slice(1) : "";
-
+let renderLock = false;
 /* Race-Guard: während wir aktiv zum Server schreiben, nicht sofort vom Server zurückspiegeln */
 let nzLocalHoldUntil = 0;
 function holdSync(ms = 1500){ nzLocalHoldUntil = Date.now() + ms; }
@@ -271,6 +271,10 @@ function renderBox(){
 
 /* ---------- Team ---------- */
 function renderTeam(){
+    if (renderLock) {
+        console.log("⏳ renderTeam() ist gerade gesperrt...");
+        return;
+      }
   const wrap = $('#teamWrap'); if (!wrap) return;
   wrap.innerHTML = '';
   for(let i=0;i<6;i++){
@@ -296,6 +300,7 @@ function renderTeam(){
     slot.addEventListener('dragover', e=>{ e.preventDefault(); slot.classList.add('over'); });
     slot.addEventListener('dragleave', ()=>slot.classList.remove('over'));
     slot.addEventListener('drop', async e=>{
+      
       console.warn('[NZ] drop event:', e);
       e.preventDefault(); slot.classList.remove('over');
       const uid = e.dataTransfer.getData('text/plain');
@@ -321,7 +326,12 @@ function renderTeam(){
       mon.isInTeam = true; 
       selectedFromBoxUid = null;
 
-      save(); renderTeam(); renderBox(); renderBoxDrawer(); renderRouteGroups();
+      save(); 
+      renderTeam(); 
+      renderBox(); 
+      renderBoxDrawer(); 
+      renderRouteGroups();
+      renderLock = true;
       $('#pickHint').style.display = 'none';
 
       // Server: idempotent & atomisch
@@ -337,9 +347,16 @@ try {
       await window.NZ.upsertPokemon(route, toTitle(mon.name), true);
   
       await window.NZ.syncNow?.();
+      renderLock = false;
+      renderTeam(); renderBox(); renderBoxDrawer(); renderRouteGroups();
+      console.log("🔓 renderTeam() ist wieder freigegeben.");
+
     }
   } catch (err) {
     console.error('[NZ] drop sync failed:', err);
+    renderLock = false;
+    renderTeam(); renderBox(); renderBoxDrawer(); renderRouteGroups();
+    console.log("🔓 renderTeam() ist wieder freigegeben.");
   }
     });
 
@@ -396,7 +413,7 @@ try {
         state.team[i] = null; 
         mon.isInTeam = false; 
         save(); renderTeam(); renderBox(); renderBoxDrawer(); renderRouteGroups();
-
+        renderLock = true;
         try {
           if (window.NZ && route) {
             await window.NZ.ensureJoined();
@@ -404,9 +421,15 @@ try {
             console.warn('[NZ] removing route slot:', route);
             await window.NZ.clearRouteSlot(route);
             await window.NZ.syncNow?.();
+            renderLock = false;
+            renderTeam(); renderBox(); renderBoxDrawer(); renderRouteGroups();
+            console.log("🔓 renderTeam() ist wieder freigegeben.");
           }
         } catch (err) {
           console.error('[NZ] remove sync failed:', err);
+          renderLock = false;
+          renderTeam(); renderBox(); renderBoxDrawer(); renderRouteGroups();
+          console.log("🔓 renderTeam() ist wieder freigegeben.");
         }
       };
     }
@@ -792,8 +815,12 @@ async clearRouteSlot(route){
     // Nur die dedizierte Action versuchen; wenn es sie nicht gibt, lassen wir es bleiben.
     console.warn("[NZ] clearRouteSlot", route, nzLobbyCode);
     try {
+        console.warn("nzLobbyCode", nzLobbyCode);
+        console.warn("nzPlayerId", nzPlayerId);
+        console.warn("nzPlayerId", route);
       await nzApi('clearRouteSlot', { code: nzLobbyCode, playerId: nzPlayerId, route });
     } catch (e) {
+        console.error("FEHLER! clearRouteSlot:", e);
       // Wenn dein Backend die Action nicht kennt oder sie optional ist, ignorieren wir das.
       // Wichtig: KEIN assignRouteSlot mit null/0 mehr!
       if (!/unknown|unsupported|not found/i.test(String(e.message || ""))) {
