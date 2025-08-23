@@ -51,7 +51,8 @@ async function ensureTables() {
       code  text NOT NULL,
       route text NOT NULL,
       slot  integer NOT NULL CHECK (slot BETWEEN 1 AND 6),
-      PRIMARY KEY (code, route),
+      player_id text NOT NULL,
+      PRIMARY KEY (code, route, player_id),
       FOREIGN KEY (code) REFERENCES lobbies(code) ON DELETE CASCADE
     )`;
   
@@ -111,14 +112,39 @@ async function upsertPokemon({ playerId, route, species, caught=true }){
   return { ok:true };
 }
 
-async function assignRouteSlot({ code, route, slot }){
-  const cd = normCode(must(code,"code"));
-  const rt = normRoute(must(route,"route"));
-  const s  = Number(slot);
-  if (!(s>=1 && s<=6)) throw new Error("slot must be 1..6");
-  await sql`INSERT INTO route_slots(code,route,slot) VALUES(${cd},${rt},${s}) ON CONFLICT(code,route) DO UPDATE SET slot=EXCLUDED.slot`;
-  return { ok:true };
-}
+async function assignRouteSlot({ code, playerId, player, route, slot }) {
+    const cd = normCode(must(code, "code"));
+    const pid = Number(must(playerId ?? player, "playerId")); // akzeptiert beides
+    const rt = normRoute(must(route, "route"));
+    const s  = Number(must(slot, "slot"));
+    if (!(s >= 1 && s <= 6)) throw new Error("slot must be 1..6");
+  
+    // 1) Falls der Ziel-Slot für diesen Spieler bereits von einer *anderen* Route belegt ist → freiräumen.
+    await sql`
+      DELETE FROM route_slots
+      WHERE code = ${cd}  AND slot = ${s}
+    `;
+  
+    // 2) Route → Slot idempotent setzen (player-scoped)
+    await sql`
+      INSERT INTO route_slots(code, player_id, route, slot)
+      VALUES (${cd}, ${playerId}, ${rt}, ${s})
+      ON CONFLICT (code, player_id, route)
+      DO UPDATE SET slot = EXCLUDED.slot
+    `;
+  
+    return { ok: true };
+  }
+
+  async function clearRouteSlot({ code, playerId, player, route }) {
+    const cd = normCode(must(code, "code"));
+    const pid = Number(must(playerId ?? player, "playerId"));
+    const rt = normRoute(must(route, "route"));
+    await sql`DELETE FROM route_slots WHERE code=${cd} AND player_id=${playerId} AND route=${rt}`;
+    return { ok: true };
+  }
+  
+  
 
 async function listState({ code }){
   const cdRaw = (code ?? "").toString();
@@ -182,6 +208,7 @@ export default async (req) => {
     if (action === "heartbeat")        return json(await heartbeat(body));
     if (action === "upsertPokemon")    return json(await upsertPokemon(body));
     if (action === "assignRouteSlot")  return json(await assignRouteSlot(body));
+    if (action === "clearRouteSlot")  return json(await clearRouteSlot(body));
     if (action === "list")             return json(await listState(body));
 
     return json({ error:`Unknown action: ${action}` }, 400);

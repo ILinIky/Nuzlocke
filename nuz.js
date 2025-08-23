@@ -296,6 +296,7 @@ function renderTeam(){
     slot.addEventListener('dragover', e=>{ e.preventDefault(); slot.classList.add('over'); });
     slot.addEventListener('dragleave', ()=>slot.classList.remove('over'));
     slot.addEventListener('drop', async e=>{
+      console.warn('[NZ] drop event:', e);
       e.preventDefault(); slot.classList.remove('over');
       const uid = e.dataTransfer.getData('text/plain');
       const mon = state.box.find(m=>m.uid===uid);
@@ -389,6 +390,7 @@ try {
     // Remove-Button
     if (mon){
       slot.querySelector('[data-remove]').onclick = async ()=>{
+        console.warn('[NZ] remove button clicked:', mon);
         const route = mon.routeName;
 
         state.team[i] = null; 
@@ -399,6 +401,7 @@ try {
           if (window.NZ && route) {
             await window.NZ.ensureJoined();
             holdSync(1000);
+            console.warn('[NZ] removing route slot:', route);
             await window.NZ.clearRouteSlot(route);
             await window.NZ.syncNow?.();
           }
@@ -787,6 +790,7 @@ window.NZ = {
 async clearRouteSlot(route){
     await this.ensureJoined();
     // Nur die dedizierte Action versuchen; wenn es sie nicht gibt, lassen wir es bleiben.
+    console.warn("[NZ] clearRouteSlot", route, nzLobbyCode);
     try {
       await nzApi('clearRouteSlot', { code: nzLobbyCode, playerId: nzPlayerId, route });
     } catch (e) {
@@ -800,6 +804,8 @@ async clearRouteSlot(route){
   
 // Idempotent: setzt Route → Slot, räumt vorher den Ziel-Slot, und umgeht "duplicate key"
 async setRouteSlot(route, targetSlot){
+    console.warn("[NZ] setRouteSlot", route, targetSlot);
+    console.warn("[NZ] LobbyCode", nzLobbyCode);
     await this.ensureJoined();
     if (!(targetSlot >= 1 && targetSlot <= 6)) throw new Error("slot must be 1..6");
   
