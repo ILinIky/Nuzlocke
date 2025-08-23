@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nuzlocke – Lobby</title>
+  <style>
+    :root { --bg:#0b0f14; --card:#111722; --muted:#2a3445; --text:#e6edf3; --accent:#53b3ff; --ok:#45c47a; --warn:#ffb454; --danger:#ff6b6b; }
+    html, body { height:100%; }
+    body { margin:0; font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:var(--bg); color:var(--text); }
+    header { padding:16px; display:flex; align-items:center; gap:12px; background:#0e141b; border-bottom:1px solid #111a27; position:sticky; top:0; z-index:10; }
+    header h1 { font-size:18px; margin:0 12px 0 0; font-weight:700; }
+    .row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+    .card { background:var(--card); border:1px solid #1a2433; border-radius:14px; padding:12px; }
+    select, input[type="text"] { background:#0f1622; border:1px solid #1c2636; border-radius:10px; color:var(--text); padding:8px 10px; }
+    button { background:var(--accent); border:0; color:#0c0f14; font-weight:700; padding:8px 12px; border-radius:10px; cursor:pointer; }
+    button.ghost { background:transparent; color:var(--text); border:1px solid #1c2636; }
+    .tabs { display:flex; gap:6px; margin:12px 0; }
+    .tab { padding:10px 12px; border-radius:10px; border:1px solid #1b2432; background:#0f1622; cursor:pointer; }
+    .tab.active { background:var(--accent); color:#0b0f14; border-color:#2f7bb0; }
+    main { padding:16px; display:grid; gap:16px; grid-template-columns: 1fr; }
+    .grid { display:grid; gap:10px; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+    .pkm-card { display:flex; flex-direction:column; align-items:center; gap:6px; padding:10px; background:#0f1622; border:1px solid #1a2433; border-radius:12px; }
+    .pkm-card img { width:72px; height:72px; image-rendering:pixelated; }
+    .pkm-name { font-size:12px; color:#b8c2cf; text-align:center; }
+    .team { display:grid; grid-template-columns: repeat(6, 1fr); gap:10px; }
+    .slot { min-height:110px; background:#0f1622; border:2px dashed #273349; border-radius:12px; display:flex; align-items:center; justify-content:center; position:relative; }
+    .slot[data-has="1"] { border-style:solid; border-color:#35517a; }
+    .slot img { width:80px; height:80px; image-rendering:pixelated; }
+    .slot .idx { position:absolute; top:6px; left:8px; font-size:11px; color:#8aa2be; }
+    #allTeams .team-row { display:grid; grid-template-columns: repeat(6, 1fr); gap:8px; margin-bottom:8px; }
+    #allTeams .player-name { font-size:12px; color:#8aa2be; margin:6px 0 10px; }
+    .empty { width:60px; height:60px; opacity:.2; border:1px dashed #3b4a64; border-radius:10px; }
+    .muted { color:#9cb0c9; font-size:12px; }
+    .sep { height:1px; background:#152033; margin:8px 0; }
+    .badge { font-size:11px; padding:3px 6px; background:#132035; border:1px solid #22324a; border-radius:999px; color:#a9c4e3; }
+    .right { margin-left:auto; }
+    .hint { font-size:12px; color:#9cb0c9; }
+    .err { color:#ff8c8c; font-size:12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Nuzlocke Lobby</h1>
+    <div class="row">
+      <label class="badge">Lobby</label>
+      <input id="lobbyId" type="text" placeholder="z.B. default" value="default" />
+      <label class="badge">Spieler</label>
+      <select id="playerSelect"></select>
+      <input id="playerName" type="text" placeholder="Neuer Spielername" />
+      <button id="joinBtn">Lobby beitreten</button>
+      <button id="reloadBtn" class="ghost">Aktualisieren</button>
+      <span id="status" class="hint"></span>
+    </div>
+  </header>
+
+  <main>
+    <div class="tabs">
+      <div class="tab active" data-tab="box">Box</div>
+      <div class="tab" data-tab="team">Team</div>
+      <div class="tab" data-tab="all">Alle Teams</div>
+      <span class="right"></span>
+      <button id="seedBtn" class="ghost" title="Demo-Pokémon in deine Box">Demo-Box befüllen</button>
+    </div>
+
+    <section id="view-box" class="card">
+      <div class="row" style="justify-content:space-between; align-items:center;">
+        <div class="muted">Ziehe ein Pokémon von hier in einen Teamslot.</div>
+        <div id="boxCount" class="badge">0 in Box</div>
+      </div>
+      <div id="boxGrid" class="grid"></div>
+      <div id="boxErr" class="err"></div>
+    </section>
+
+    <section id="view-team" class="card" style="display:none;">
+      <div class="muted">Team-Slots (1–6). Lasse Pokémon hier fallen.</div>
+      <div id="teamGrid" class="team"></div>
+      <div class="sep"></div>
+      <button id="clearTeamBtn" class="ghost">Team leeren</button>
+      <div id="teamErr" class="err"></div>
+    </section>
+
+    <section id="view-all" class="card" style="display:none;">
+      <div class="muted">Synchronisierte Ansicht aller Spieler auf Basis der Route→Slot-Zuordnung.</div>
+      <div id="allTeams"></div>
+    </section>
+  </main>
+
+  <script src="nuz.js"></script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+# netlify.toml — configure functions directory
+[build]
+  functions = "netlify/functions"
+
+# Optional: if your frontend calls /api/nuzlocke you can proxy to the function
+# [[redirects]]
+#   from = "/api/nuzlocke"
+#   to = "/.netlify/functions/nuzlocke"
+#   status = 200

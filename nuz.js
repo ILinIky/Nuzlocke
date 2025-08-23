@@ -1,4 +1,3 @@
-
 /* =========================
    App + Multiplayer (merged)
    ========================= */
@@ -11,16 +10,9 @@ const now = () => new Date().toISOString();
 const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 const toTitle = name => name ? name.charAt(0).toUpperCase() + name.slice(1) : "";
 
-// debounce/guard: kurzzeitig kein Server->Local-Apply
-
-
-// Merkt sich den letzten vom Server bekannten Stand: route -> slot
-let nzLastRouteSlots = new Map();
-
-// Während wir aktiv Änderungen hochschieben, nicht sofort vom Server zurückspiegeln
+/* Race-Guard: während wir aktiv zum Server schreiben, nicht sofort vom Server zurückspiegeln */
 let nzLocalHoldUntil = 0;
-function holdSync(ms = 1200){ nzLocalHoldUntil = Date.now() + ms; }
-
+function holdSync(ms = 1500){ nzLocalHoldUntil = Date.now() + ms; }
 
 /* ---------- Persistence ---------- */
 const LS_KEY = 'nuzlocke_state_v1';
@@ -33,16 +25,19 @@ const DEFAULT_ROUTES = [
 
 const EMPTY_STATE = () => ({
   user: { name: '' },
-  routes: DEFAULT_ROUTES.map((n, i) => ({ id: 'r'+(i+1), name:n, encounter: { status:'pending', pokemonId:null, pokemonName:'', sprite:null, nickname:'', updatedAt:null } })),
-  box: [], // mons: {uid,id,name,sprite,routeName,nickname,caughtAt,isInTeam:false}
-  team: [null,null,null,null,null,null], // stores uid of mon
+  routes: DEFAULT_ROUTES.map((n, i) => ({
+    id: 'r'+(i+1),
+    name:n,
+    encounter: { status:'pending', pokemonId:null, pokemonName:'', sprite:null, nickname:'', updatedAt:null }
+  })),
+  box: [],  // {uid,id,name,sprite,routeName,nickname,caughtAt,isInTeam:false}
+  team: [null,null,null,null,null,null],
   links: { 0:null,1:null,2:null,3:null,4:null,5:null }
 });
 
 let state = null;
 let selectedFromBoxUid = null;
 
-/* ---------- Load/Save ---------- */
 function save(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
 function load(){ const s = localStorage.getItem(LS_KEY); state = s ? JSON.parse(s) : EMPTY_STATE(); }
 
@@ -170,7 +165,7 @@ function renderEncounter(){
     }
     save(); renderRoutes(); renderEncounter(); renderBox(); renderBoxDrawer(); renderRouteGroups();
 
-    // Multiplayer: Route/Species upserten
+    // Server: species für "All Teams" aktualisieren
     if (window.NZ) window.NZ.upsertPokemon(rt.name, toTitle(chosen.name), true).catch(console.error);
   };
 
@@ -200,7 +195,7 @@ function renderBoxDrawer(){
     card.className = 'poke-card';
     card.draggable = true;
     card.dataset.uid = mon.uid;
-    card.setAttribute('data-route', mon.routeName); // wichtig für Multiplayer-Drag
+    card.setAttribute('data-route', mon.routeName);
     card.innerHTML = `
       <div class="poke-top">
         <div>
@@ -276,7 +271,8 @@ function renderBox(){
 
 /* ---------- Team ---------- */
 function renderTeam(){
-  const wrap = $('#teamWrap'); wrap.innerHTML = '';
+  const wrap = $('#teamWrap'); if (!wrap) return;
+  wrap.innerHTML = '';
   for(let i=0;i<6;i++){
     const uidRef = state.team[i];
     const mon = uidRef ? state.box.find(m=>m.uid===uidRef) : null;
@@ -300,145 +296,118 @@ function renderTeam(){
     slot.addEventListener('dragover', e=>{ e.preventDefault(); slot.classList.add('over'); });
     slot.addEventListener('dragleave', ()=>slot.classList.remove('over'));
     slot.addEventListener('drop', async e=>{
-        e.preventDefault();
-        slot.classList.remove('over');
-      
-        const uid = e.dataTransfer.getData('text/plain');
-        const mon = state.box.find(m=>m.uid===uid);
-        if(!mon) return;
-      
-        const targetSlot = i + 1;
-        const route = mon.routeName || e.dataTransfer.getData('text/route') || '';
-      
-        // --- lokales Team aktualisieren (wie gehabt)
-        const already = state.team.findIndex(u=>u===uid);
-        if(already>=0){
-          const back = state.team[i];
-          state.team[already] = back || null;
-        }
-        const prevUid = state.team[i];
-        const prevMon = prevUid ? state.box.find(m=>m.uid===prevUid) : null;
-        const prevRoute = prevMon?.routeName || null;
-      
-        if(prevMon) prevMon.isInTeam = false;
-        state.team[i] = uid; 
-        mon.isInTeam = true; 
-        selectedFromBoxUid = null;
-      
-        save(); renderTeam(); renderBox(); renderBoxDrawer(); renderRouteGroups();
-        $('#pickHint').style.display = 'none';
-      
-        // --- Server: Duplikate vermeiden
-        try {
-          if (window.NZ && route) {
-            await window.NZ.ensureJoined();
-            holdSync(1500);
-      
-            // 0) Wenn der Server uns bereits sagt: route ist schon im Zielslot -> nur species upserten und raus
-            if (nzLastRouteSlots.get(route) === targetSlot) {
-              await window.NZ.upsertPokemon(route, toTitle(mon.name), true);
-              await window.NZ.syncNow?.();
-              return;
-            }
-      
-            // 1) mapping der Route (falls irgendwo gesetzt) erst löschen
-            await window.NZ.clearRouteSlot(route);
-      
-            // 2) falls im Zielslot zuvor eine andere Route lag -> auch diese lösen
-            if (prevRoute && prevRoute !== route) {
-              await window.NZ.clearRouteSlot(prevRoute);
-            }
-      
-            // 3) nun sauber setzen + species upserten
-            await window.NZ.assignGlobalSlot(route, targetSlot);
-            await window.NZ.upsertPokemon(route, toTitle(mon.name), true);
-      
-            await window.NZ.syncNow?.();
-          }
-        } catch (err) {
-          console.error('[NZ] drop sync failed:', err);
-        }
-      });
-      
-      
-      
+      e.preventDefault(); slot.classList.remove('over');
+      const uid = e.dataTransfer.getData('text/plain');
+      const mon = state.box.find(m=>m.uid===uid);
+      if(!mon) return;
+
+      const targetSlot = i + 1;
+      const route = mon.routeName || e.dataTransfer.getData('text/route') || '';
+
+      // Vorheriger Inhalt in DIESEM Slot
+      const prevUid = state.team[i];
+      const prevMon = prevUid ? state.box.find(m=>m.uid===prevUid) : null;
+      const prevRoute = prevMon?.routeName || null;
+
+      // Lokal updaten
+      const already = state.team.findIndex(u=>u===uid);
+      if(already>=0){
+        const back = state.team[i];
+        state.team[already] = back || null;
+      }
+      if(prevMon) prevMon.isInTeam = false;
+      state.team[i] = uid; 
+      mon.isInTeam = true; 
+      selectedFromBoxUid = null;
+
+      save(); renderTeam(); renderBox(); renderBoxDrawer(); renderRouteGroups();
+      $('#pickHint').style.display = 'none';
+
+      // Server: idempotent & atomisch
+      // --- Server: idempotent & atomisch
+try {
+    if (window.NZ && route) {
+      await window.NZ.ensureJoined();
+      holdSync(1500);
+  
+      // Route→Slot setzen (robust)
+      await window.NZ.setRouteSlot(route, targetSlot);
+      // species/caught updaten
+      await window.NZ.upsertPokemon(route, toTitle(mon.name), true);
+  
+      await window.NZ.syncNow?.();
+    }
+  } catch (err) {
+    console.error('[NZ] drop sync failed:', err);
+  }
+    });
 
     // Click-to-place
     slot.addEventListener('click', async ()=>{
-        if(!selectedFromBoxUid) return;
-        const pick = state.box.find(m=>m.uid===selectedFromBoxUid);
-        if(!pick) return;
+      if(!selectedFromBoxUid) return;
+      const pick = state.box.find(m=>m.uid===selectedFromBoxUid);
+      if(!pick) return;
+
+      const targetSlot = i + 1;
+      const route = pick.routeName || '';
+
+      // Vorheriger Inhalt
+      const prevUid = state.team[i];
+      const prevMon = prevUid ? state.box.find(m=>m.uid===prevUid) : null;
+      const prevRoute = prevMon?.routeName || null;
+
+      // Lokal
+      const already = state.team.findIndex(u=>u===pick.uid);
+      if(already>=0){
+        const back = state.team[i];
+        state.team[already] = back || null;
+      }
+      if(prevMon) prevMon.isInTeam = false;
+      state.team[i] = pick.uid; 
+      pick.isInTeam = true; 
+      selectedFromBoxUid = null;
+
+      save(); renderTeam(); renderBox(); renderBoxDrawer(); renderRouteGroups();
+      $('#pickHint').style.display = 'none';
+
+      // Server
+      try {
+        if (window.NZ && route) {
+          await window.NZ.ensureJoined();
+          holdSync(1500);
       
-        const targetSlot = i + 1;
-        const route = pick.routeName || '';
+          await window.NZ.setRouteSlot(route, targetSlot);
+          await window.NZ.upsertPokemon(route, toTitle(pick.name), true);
       
-        // --- lokal
-        const already = state.team.findIndex(u=>u===pick.uid);
-        if(already>=0){
-          const back = state.team[i];
-          state.team[already] = back || null;
+          await window.NZ.syncNow?.();
         }
-        const prevUid = state.team[i];
-        const prevMon = prevUid ? state.box.find(m=>m.uid===prevUid) : null;
-        const prevRoute = prevMon?.routeName || null;
-      
-        if(prevMon) prevMon.isInTeam = false;
-        state.team[i] = pick.uid; 
-        pick.isInTeam = true; 
-        selectedFromBoxUid = null;
-      
+      } catch (err) {
+        console.error('[NZ] click sync failed:', err);
+      }
+    });
+
+    // Remove-Button
+    if (mon){
+      slot.querySelector('[data-remove]').onclick = async ()=>{
+        const route = mon.routeName;
+
+        state.team[i] = null; 
+        mon.isInTeam = false; 
         save(); renderTeam(); renderBox(); renderBoxDrawer(); renderRouteGroups();
-        $('#pickHint').style.display = 'none';
-      
-        // --- Server
+
         try {
           if (window.NZ && route) {
             await window.NZ.ensureJoined();
-            holdSync(1500);
-      
-            if (nzLastRouteSlots.get(route) === targetSlot) {
-              await window.NZ.upsertPokemon(route, toTitle(pick.name), true);
-              await window.NZ.syncNow?.();
-              return;
-            }
-      
+            holdSync(1000);
             await window.NZ.clearRouteSlot(route);
-            if (prevRoute && prevRoute !== route) {
-              await window.NZ.clearRouteSlot(prevRoute);
-            }
-            await window.NZ.assignGlobalSlot(route, targetSlot);
-            await window.NZ.upsertPokemon(route, toTitle(pick.name), true);
-      
             await window.NZ.syncNow?.();
           }
         } catch (err) {
-          console.error('[NZ] click sync failed:', err);
+          console.error('[NZ] remove sync failed:', err);
         }
-      });
-      
-      
-      
+      };
+    }
 
-      if (mon){
-        slot.querySelector('[data-remove]').onclick = async ()=>{
-          // Route merken
-          const route = mon.routeName;
-      
-          // lokal
-          state.team[i] = null; 
-          mon.isInTeam = false; 
-          save(); renderTeam(); renderBox(); renderBoxDrawer(); renderRouteGroups();
-      
-          // Server: Slot clearing
-          try {
-            holdSync(1200);
-            if (route) await window.NZ.clearRouteSlot(route);
-            await window.NZ.syncNow?.();
-          } catch (err) {
-            console.error('[NZ] remove sync failed:', err);
-          }
-        };
-      }
     wrap.appendChild(slot);
   }
 }
@@ -463,7 +432,7 @@ function renderRouteGroups(){
   });
 }
 
-/* ---------- Simple Lobby Badge ---------- */
+/* ---------- Simple local Lobby badge (unabhängig vom Multiplayer-UI) ---------- */
 function renderLocalLobbyBadge(){
   $('#playerNameBadge').textContent = state.user?.name || '–';
   const list = $('#playersList'); if(!list) return;
@@ -488,24 +457,25 @@ async function importData(file){
     if(!obj || !obj.user || !obj.routes || !obj.box || !obj.team) throw new Error('Ungültiges Format');
     state = obj; save();
     renderRoutes(); renderEncounter(); renderBox(); renderTeam(); renderBoxDrawer(); renderRouteGroups(); renderLocalLobbyBadge();
-    alert('Import erfolgreich.');
+    // Nach Import: Box → Server spiegeln
     if (window.NZ) {
-        try {
-          await window.NZ.ensureJoined();
-          const seen = new Set();
-          const tasks = [];
-          for (const m of state.box) {
-            if (m.routeName && !seen.has(m.routeName)) {
-              seen.add(m.routeName);
-              tasks.push(window.NZ.upsertPokemon(m.routeName, toTitle(m.name), true));
-            }
+      try {
+        await window.NZ.ensureJoined();
+        const seen = new Set();
+        const tasks = [];
+        for (const m of state.box) {
+          if (m.routeName && !seen.has(m.routeName)) {
+            seen.add(m.routeName);
+            tasks.push(window.NZ.upsertPokemon(m.routeName, toTitle(m.name), true));
           }
-          await Promise.all(tasks);
-          await window.NZ.syncNow?.();
-        } catch(e) {
-          console.warn("[NZ] bulk sync after import failed:", e);
         }
+        if (tasks.length) await Promise.all(tasks);
+        await window.NZ.syncNow?.();
+      } catch(e) {
+        console.warn("[NZ] bulk sync after import failed:", e);
       }
+    }
+    alert('Import erfolgreich.');
   }catch(e){ alert('Fehler beim Import: '+ e.message); }
 }
 
@@ -526,21 +496,21 @@ function boot(){
   load();
   $$('#tabs .tab-btn').forEach(btn=> btn.addEventListener('click',()=> setActiveTab(btn.dataset.tab)) );
 
-  $('#addRouteBtn').onclick = ()=>{
+  $('#addRouteBtn')?.addEventListener('click', ()=>{
     const name = $('#addRouteName').value.trim();
     if(!name) return;
     state.routes.push({ id: 'r'+uid(), name, encounter:{ status:'pending', pokemonId:null, pokemonName:'', sprite:null, nickname:'', updatedAt:null } });
     save(); $('#addRouteName').value=''; renderRoutes();
-  };
+  });
 
-  $('#exportBtn').onclick = exportData;
-  $('#importFile').addEventListener('change', e=>{ const f=e.target.files[0]; if(f) importData(f); e.target.value=''; });
+  $('#exportBtn')?.addEventListener('click', exportData);
+  $('#importFile')?.addEventListener('change', e=>{ const f=e.target.files[0]; if(f) importData(f); e.target.value=''; });
 
-  $('#startBtn').onclick = ()=>{
+  $('#startBtn')?.addEventListener('click', ()=>{
     const name = $('#trainerName').value.trim();
     if(!name) return alert('Bitte gib einen Namen ein.');
     state.user.name = name; save(); ensureLogin();
-  };
+  });
 
   renderRoutes(); renderEncounter(); renderBox(); renderTeam(); renderBoxDrawer(); renderRouteGroups(); renderLocalLobbyBadge(); ensureLogin();
   ensurePokedex().then(()=>{ renderEncounter(); save(); }).catch(()=>{});
@@ -562,6 +532,9 @@ let nzLobbyCode  = (new URL(location.href)).searchParams.get("code")
 
 const elLobbyPane = $("#nz-lobby");
 const elAllTeams  = $("#nz-allteams");
+
+// Cache: letzter bekannter Server-Stand route -> slot
+let nzLastRouteSlots = new Map();
 
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({
   "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
@@ -643,84 +616,77 @@ function nzRenderLobby(st){
   };
 }
 
-// --- All Teams render (gleiches Slot-Layout) ---
+// --- All Teams render (Sprites wie in der Box) ---
 function nzRenderAllTeams(st){
-    if (!elAllTeams) return;
-  
-    // route -> slot (globales Mapping für die Lobby)
-    const byRoute = new Map((st.routeSlots || []).map(r => [r.route, r.slot]));
-    const routeOf = s => { for (const [rt, sl] of byRoute.entries()) if (sl === s) return rt; return null; };
-  
-    const players = st.players || [];
-  
-    const spriteFor = (species) => {
-      if (!species || !Array.isArray(pokedex) || pokedex.length === 0) return null;
-      const name = String(species).toLowerCase();
-      const p = pokedex.find(x => x.name === name);
-      return p ? SPRITE(p.id) : null;
-    };
-  
-    const htmlPlayers = players.map(p => {
-      const box = (st.boxes || {})[p.id] || {};
-      const cells = [1,2,3,4,5,6].map(s => {
-        const rt = routeOf(s);
-        const mon = rt ? box[rt] : null;
-        const sprite = mon ? spriteFor(mon.species) : null;
-  
+  if (!elAllTeams) return;
+
+  // route -> slot
+  const byRoute = new Map((st.routeSlots || []).map(r => [r.route, r.slot]));
+  const routeOf = s => { for (const [rt, sl] of byRoute.entries()) if (sl === s) return rt; return null; };
+
+  const spriteFor = (species) => {
+    if (!species || !Array.isArray(pokedex) || pokedex.length === 0) return null;
+    const p = pokedex.find(x => x.name === String(species).toLowerCase());
+    return p ? SPRITE(p.id) : null;
+  };
+
+  const players = st.players || [];
+  const htmlPlayers = players.map(p => {
+    const box = (st.boxes || {})[p.id] || {};
+    const cells = [1,2,3,4,5,6].map(s => {
+      const rt = routeOf(s);
+      const mon = rt ? box[rt] : null;
+      if (!mon) {
+        return `<div class="tcell"><div class="ghost">—</div></div>`;
+      }
+      const sprite = spriteFor(mon.species);
+      if (sprite) {
         return `
           <div class="tcell">
-            ${
-              mon
-              ? (sprite
-                 ? `
-                    <div class="poke-card">
-                      <div class="poke-top">
-                        <div>
-                          <div class="poke-name">${toTitle(mon.species)}</div>
-                          <div class="tag">${rt}</div>
-                        </div>
-                      </div>
-                      <div class="poke-sprite"><img alt="${toTitle(mon.species)}" src="${sprite}"></div>
-                    </div>
-                   `
-                 : `
-                    <div class="tmeta">
-                      <div class="route">${rt}</div>
-                      <div class="mon">${toTitle(mon.species)}${mon.caught ? "" : " (nicht gefangen)"}</div>
-                    </div>
-                   `
-                )
-              : `<div class="ghost">—</div>`
-            }
+            <div class="poke-card">
+              <div class="poke-top">
+                <div>
+                  <div class="poke-name">${toTitle(mon.species)}</div>
+                  <div class="tag">${rt}</div>
+                </div>
+              </div>
+              <div class="poke-sprite"><img alt="${toTitle(mon.species)}" src="${sprite}"></div>
+            </div>
           </div>`;
-      }).join("");
-  
+      }
       return `
-        <div class="player-team">
-          <div class="pname">Team: ${esc(p.name)}${p.online ? " <span style='opacity:.65'>(online)</span>" : ""}</div>
-          <div class="trow">${cells}</div>
-        </div>
-      `;
+        <div class="tcell">
+          <div class="tmeta">
+            <div class="route">${rt}</div>
+            <div class="mon">${toTitle(mon.species)}${mon.caught ? "" : " (nicht gefangen)"}</div>
+          </div>
+        </div>`;
     }).join("");
-  
-    elAllTeams.innerHTML = `
-      <style>
-        #nz-allteams{margin:1rem 0}
-        #nz-allteams .player-team{margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid rgba(255,255,255,.08)}
-        #nz-allteams .pname{font-weight:800;margin:.4rem 0 .6rem}
-        #nz-allteams .trow{display:grid;grid-template-columns:repeat(6,minmax(140px,1fr));gap:.75rem}
-        #nz-allteams .tcell{min-height:160px}
-        #nz-allteams .ghost{opacity:.5;display:grid;place-items:center;height:100%;border:1px dashed rgba(255,255,255,.2);border-radius:12px}
-        #nz-allteams .tmeta{border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:.5rem;background:#0b1433}
-      </style>
-      ${htmlPlayers || "<i>noch keine Spieler</i>"}
-    `;
-  }
-  
+
+    return `
+      <div class="player-team">
+        <div class="pname">Team: ${esc(p.name)}${p.online ? " <span style='opacity:.65'>(online)</span>" : ""}</div>
+        <div class="trow">${cells}</div>
+      </div>`;
+  }).join("");
+
+  elAllTeams.innerHTML = `
+    <style>
+      #nz-allteams{margin:1rem 0}
+      #nz-allteams .player-team{margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid rgba(255,255,255,.08)}
+      #nz-allteams .pname{font-weight:800;margin:.4rem 0 .6rem}
+      #nz-allteams .trow{display:grid;grid-template-columns:repeat(6,minmax(140px,1fr));gap:.75rem}
+      #nz-allteams .tcell{min-height:160px}
+      #nz-allteams .ghost{opacity:.5;display:grid;place-items:center;height:100%;border:1px dashed rgba(255,255,255,.2);border-radius:12px}
+      #nz-allteams .tmeta{border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:.5rem;background:#0b1433}
+    </style>
+    ${htmlPlayers || "<i>noch keine Spieler</i>"}
+  `;
+}
 
 // --- Global → Local spiegeln ---
 function nzApplyGlobalToLocal(st){
-    if (Date.now() < nzLocalHoldUntil) return;
+  if (Date.now() < nzLocalHoldUntil) return; // Race-Guard aktiv → nicht überschreiben
   if (!state || !Array.isArray(state.team) || !Array.isArray(state.box)) return;
 
   const r2s = new Map((st.routeSlots||[]).map(x => [x.route, x.slot]));
@@ -756,6 +722,8 @@ async function nzSync(){
   if (!nzLobbyCode) { nzRenderLobby({ code:"", players:[] }); return; }
   try {
     const st = await nzListState(nzLobbyCode);
+    // Cache: letzter Stand route->slot (für Idempotenzcheck)
+    nzLastRouteSlots = new Map((st.routeSlots || []).map(x => [x.route, x.slot]));
     nzRenderLobby(st);
     nzRenderAllTeams(st);
     nzApplyGlobalToLocal(st);
@@ -771,7 +739,7 @@ setInterval(nzSync, NZ_POLL_MS);
   const urlCode = (new URL(location.href)).searchParams.get("code");
   if (urlCode) { nzLobbyCode = urlCode.toUpperCase(); localStorage.setItem("lobbyCode", nzLobbyCode); }
   if (nzLobbyCode && !nzPlayerId) {
-    const nm = nzPlayerName || prompt("Dein Name?") || "Spieler";
+    const nm = (state?.user?.name || nzPlayerName || prompt("Dein Name?") || "Spieler").trim();
     nzPlayerName = nm; localStorage.setItem("playerName", nm);
     const j = await nzApi("joinLobby", { name:nm, code:nzLobbyCode });
     nzPlayerId = j.player.id; localStorage.setItem("playerId", nzPlayerId);
@@ -779,82 +747,112 @@ setInterval(nzSync, NZ_POLL_MS);
   await nzSync();
 })();
 
-// --- Öffentliche Hooks für App-Code ---
+// --- Öffentliche Hooks ---
 window.NZ = {
-    async ensureJoined(){
-      // Lobby-Code bevorzugt aus URL, sonst localStorage
-      if (!nzLobbyCode) {
-        const urlCode = (new URL(location.href)).searchParams.get("code");
-        if (urlCode) {
-          nzLobbyCode = urlCode.toUpperCase();
-          localStorage.setItem("lobbyCode", nzLobbyCode);
-        }
-      }
-  
-      // Falls noch kein Player existiert → joinen (erstellt neue Lobby, wenn kein Code da ist)
-      if (!nzPlayerId) {
-        const nm = (state?.user?.name || nzPlayerName || prompt("Dein Name?") || "Spieler").trim();
-        nzPlayerName = nm;
-        localStorage.setItem("playerName", nm);
-  
-        const j = await nzApi("joinLobby", { name: nm, code: nzLobbyCode || "" });
-        nzPlayerId = j.player.id;
-        nzLobbyCode = j.code || nzLobbyCode || "";
-  
-        localStorage.setItem("playerId", nzPlayerId);
-        if (nzLobbyCode) {
-          localStorage.setItem("lobbyCode", nzLobbyCode);
-          history.replaceState(null,"",`?code=${nzLobbyCode}`);
-        }
-        return;
-      }
-  
-      // Schon Player vorhanden → rejoin mit aktuellem Code/Name (best effort)
+  async ensureJoined(){
+    if (!nzLobbyCode) {
+      const urlCode = (new URL(location.href)).searchParams.get("code");
+      if (urlCode) { nzLobbyCode = urlCode.toUpperCase(); localStorage.setItem("lobbyCode", nzLobbyCode); }
+    }
+    if (!nzPlayerId) {
+      const nm = (state?.user?.name || nzPlayerName || prompt("Dein Name?") || "Spieler").trim();
+      nzPlayerName = nm; localStorage.setItem("playerName", nm);
+      const j = await nzApi("joinLobby", { name: nm, code: nzLobbyCode || "" });
+      nzPlayerId = j.player.id;
+      nzLobbyCode = j.code || nzLobbyCode || "";
+      localStorage.setItem("playerId", nzPlayerId);
       if (nzLobbyCode) {
-        try {
-          await nzApi("rejoinLobby", { playerId: nzPlayerId, name: (nzPlayerName || state?.user?.name || "Spieler"), code: nzLobbyCode });
-        } catch(_) {}
+        localStorage.setItem("lobbyCode", nzLobbyCode);
+        history.replaceState(null, '', `?code=${nzLobbyCode}`);
       }
-    },
-  
-    async upsertPokemon(route, species, caught=true){
-      await this.ensureJoined();
-      await nzApi('upsertPokemon', {
-        code: nzLobbyCode,
-        playerId: nzPlayerId,
-        route, species, caught
-      });
-    },
-  
-    async assignGlobalSlot(route, slot){
-      await this.ensureJoined();
-      await nzApi('assignRouteSlot', {
-        code: nzLobbyCode,
-        playerId: nzPlayerId,
-        route, slot
-      });
-    },
-  
-    // Route→Slot-Mapping für Route löschen (mit Fallbacks)
-    async clearRouteSlot(route){
-      await this.ensureJoined();
-      try {
-        await nzApi('clearRouteSlot', { code: nzLobbyCode, playerId: nzPlayerId, route });
-      } catch {
-        try { await nzApi('assignRouteSlot', { code: nzLobbyCode, playerId: nzPlayerId, route, slot: null }); }
-        catch { await nzApi('assignRouteSlot', { code: nzLobbyCode, playerId: nzPlayerId, route, slot: 0 }); }
-      }
-    },
-  
-    async syncNow(){ await nzSync(); },
-  
-    get me(){ return { playerId: nzPlayerId, playerName: nzPlayerName, lobbyCode: nzLobbyCode } }
-  };
-  
-  
-  
+      return;
+    }
+    if (nzLobbyCode) {
+      try { await nzApi("rejoinLobby", { playerId: nzPlayerId, name: (nzPlayerName || state?.user?.name || "Spieler"), code: nzLobbyCode }); } catch(_) {}
+    }
+  },
 
-/* --- Fallback: Falls irgendeine Box-Karte Route nicht mitsendet, ergänzen --- */
+  async upsertPokemon(route, species, caught=true){
+    await this.ensureJoined();
+    await nzApi('upsertPokemon', { code: nzLobbyCode, playerId: nzPlayerId, route, species, caught });
+  },
+
+  async assignGlobalSlot(route, slot){
+    await this.ensureJoined();
+    await nzApi('assignRouteSlot', { code: nzLobbyCode, playerId: nzPlayerId, route, slot });
+  },
+
+  // ❌ ALT: clearRouteSlot(...) hatte Fallback mit slot:null/0
+// ✅ NEU:
+async clearRouteSlot(route){
+    await this.ensureJoined();
+    // Nur die dedizierte Action versuchen; wenn es sie nicht gibt, lassen wir es bleiben.
+    try {
+      await nzApi('clearRouteSlot', { code: nzLobbyCode, playerId: nzPlayerId, route });
+    } catch (e) {
+      // Wenn dein Backend die Action nicht kennt oder sie optional ist, ignorieren wir das.
+      // Wichtig: KEIN assignRouteSlot mit null/0 mehr!
+      if (!/unknown|unsupported|not found/i.test(String(e.message || ""))) {
+        throw e;
+      }
+    }
+  },
+  
+// Idempotent: setzt Route → Slot, räumt vorher den Ziel-Slot, und umgeht "duplicate key"
+async setRouteSlot(route, targetSlot){
+    await this.ensureJoined();
+    if (!(targetSlot >= 1 && targetSlot <= 6)) throw new Error("slot must be 1..6");
+  
+    // 1) Falls Route schon im Zielslot: fertig
+    if (nzLastRouteSlots.get(route) === targetSlot) return;
+  
+    // 2) Wer liegt laut letztem Serverstand im Zielslot? (kann leer sein)
+    let routeAtTarget = null;
+    for (const [rt, sl] of nzLastRouteSlots.entries()){
+      if (sl === targetSlot) { routeAtTarget = rt; break; }
+    }
+    // Zielslot freiräumen (best effort)
+    if (routeAtTarget && routeAtTarget !== route) {
+      try { await this.clearRouteSlot(routeAtTarget); } catch (_) {}
+    }
+  
+    // 3) Setzen – robust gegen "duplicate key"
+    try {
+      await nzApi('assignRouteSlot', { code: nzLobbyCode, playerId: nzPlayerId, route, slot: targetSlot });
+    } catch (e1) {
+      const msg = String(e1.message || "");
+      if (/duplicate|unique|exists/i.test(msg)) {
+        // Versuch per UPDATE/UPSERT
+        try {
+          await nzApi('updateRouteSlot', { code: nzLobbyCode, playerId: nzPlayerId, route, slot: targetSlot });
+        } catch (e2) {
+          try {
+            await nzApi('upsertRouteSlot', { code: nzLobbyCode, playerId: nzPlayerId, route, slot: targetSlot });
+          } catch (e3) {
+            // letzter Versuch: aktuelle Route löschen → dann normal setzen
+            try {
+              await this.clearRouteSlot(route);
+              await nzApi('assignRouteSlot', { code: nzLobbyCode, playerId: nzPlayerId, route, slot: targetSlot });
+            } catch (e4) {
+              throw e4;
+            }
+          }
+        }
+      } else {
+        throw e1;
+      }
+    }
+  
+    // 4) lokalen Cache aktualisieren
+    nzLastRouteSlots.set(route, targetSlot);
+  },
+  
+  async syncNow(){ await nzSync(); },
+
+  get me(){ return { playerId: nzPlayerId, playerName: nzPlayerName, lobbyCode: nzLobbyCode } }
+};
+
+/* --- Fallback: dragstart stellt sicher, dass die Route immer mitgegeben wird --- */
 document.addEventListener("dragstart", e => {
   const card = e.target?.closest?.("[data-uid]");
   if (!card || !state?.box) return;
@@ -866,5 +864,3 @@ document.addEventListener("dragstart", e => {
     e.dataTransfer?.setData?.("text/route", mon.routeName);
   } catch {}
 }, true);
-
-
