@@ -42,7 +42,9 @@ async function ensureTables() {
       route     text NOT NULL,
       species   text NOT NULL,
       caught    boolean NOT NULL DEFAULT true,
-      PRIMARY KEY (player_id, route),
+      nickname  text,
+      code text NOT NULL,
+      PRIMARY KEY (player_id, route,code),
       FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
     )`;
   
@@ -55,6 +57,14 @@ async function ensureTables() {
       PRIMARY KEY (code, route, player_id),
       FOREIGN KEY (code) REFERENCES lobbies(code) ON DELETE CASCADE
     )`;
+
+    await sql`CREATE TABLE IF NOT EXISTS routes (
+        code text NOT NULL,
+        name text NOT NULL,
+        ord  int  NOT NULL DEFAULT 9999,
+        PRIMARY KEY (code, name)
+      )`;
+      
   
     // 🔁 MIGRATION für Altbestände:
     // Falls eine alte route_slots-Tabelle ohne "code" existiert, ergänzen wir sie.
@@ -104,11 +114,12 @@ async function heartbeat({ playerId, code }){
   return { ok:true, at: nowIso() };
 }
 
-async function upsertPokemon({ playerId, route, species, caught=true }){
+async function upsertPokemon({ code, playerId, route, species, caught=true,nickname }){
+  const lobby = must(code, "code");  
   const pid = must(playerId,"playerId");
   const rt  = normRoute(must(route,"route"));
   const sp  = String(must(species,"species")).slice(0,60);
-  await sql`INSERT INTO pokemons(player_id,route,species,caught) VALUES(${pid},${rt},${sp},${Boolean(caught)}) ON CONFLICT(player_id,route) DO UPDATE SET species=EXCLUDED.species, caught=EXCLUDED.caught`;
+  await sql`INSERT INTO pokemons(player_id,route,species,caught,nickname,code) VALUES(${pid},${rt},${sp},${Boolean(caught)},${nickname},${lobby}) ON CONFLICT(player_id,route,code) DO UPDATE SET species=EXCLUDED.species, caught=EXCLUDED.caught`;
   return { ok:true };
 }
 
@@ -184,6 +195,19 @@ async function listState({ code }){
   return { code: cd, players: members, routeSlots, boxes, now: nowIso() };
 }
 
+async function listRoutes({ code }) {
+    const cd = normCode(must({ code }, 'code'));
+    const rows = await sql`
+      SELECT name, ord
+      FROM routes
+      WHERE code = 'blackandwhite'
+      ORDER BY ord ASC, name ASC
+    `;
+    // Gibt Array von { name, ord } zurück
+    return { routes: rows };
+  }
+  
+
 export default async (req) => {
   try {
     if (!process.env.NETLIFY_DATABASE_URL) return json({ error:"NETLIFY_DATABASE_URL fehlt" }, 500);
@@ -211,6 +235,7 @@ export default async (req) => {
     if (action === "assignRouteSlot")  return json(await assignRouteSlot(body));
     if (action === "clearRouteSlot")  return json(await clearRouteSlot(body));
     if (action === "list")             return json(await listState(body));
+    if (action === "listRoutes")             return json(await listRoutes(body));
 
     return json({ error:`Unknown action: ${action}` }, 400);
   } catch (e) {

@@ -14,6 +14,7 @@ let renderLock = false;
 let nzLocalHoldUntil = 0;
 function holdSync(ms = 1500){ nzLocalHoldUntil = Date.now() + ms; }
 
+
 /* ---------- Persistence ---------- */
 const LS_KEY = 'nuzlocke_state_v1';
 const POKEDEX_KEY = 'nuz_pokedex_v2';
@@ -161,7 +162,9 @@ function renderEncounter(){
     };
     const exists = state.box.find(m=>m.routeName===rt.name);
     if(!exists){
-      state.box.push({ uid:uid(), id:chosen.id, name:chosen.name, sprite:SPRITE(chosen.id), routeName:rt.name, nickname:nick.value.trim(), caughtAt:now(), isInTeam:false });
+      state.box.push({ uid:uid(), id:chosen.id, name:chosen.name, sprite:SPRITE(chosen.id), routeName:rt.name, nickname:nick.value.trim(), caughtAt:now(), isInTeam:false,
+      lobbyCode: currentLobbyCode()    // ⬅️ neu
+     });
     }
     save(); renderRoutes(); renderEncounter(); renderBox(); renderBoxDrawer(); renderRouteGroups();
 
@@ -188,9 +191,11 @@ function renderEncounter(){
 
 /* ---------- Box Drawer ---------- */
 function renderBoxDrawer(){
-  const grid = $('#boxDrawer'); if(!grid) return;
-  grid.innerHTML = '';
-  state.box.forEach(mon =>{
+    const grid = $('#boxDrawer'); if(!grid) return;
+    grid.innerHTML = '';
+    const code = currentLobbyCode();
+    const mons = state.box.filter(m => !code ? true : m.lobbyCode === code);  // ⬅️ Filter
+    mons.forEach(mon => {
     const card = document.createElement('div');
     card.className = 'poke-card';
     card.draggable = true;
@@ -204,7 +209,7 @@ function renderBoxDrawer(){
         </div>
       </div>
       <div class="poke-sprite"><img alt="${toTitle(mon.name)}" src="${mon.sprite}"></div>
-      ${mon.isInTeam?`<div class="ribbon">Im Team</div>`:''}
+      ${mon.isInTeam?`<div class="ribbon">Im Team -${mon.nickname}</div>`:''}
     `;
     card.addEventListener('dragstart', e=>{
       card.classList.add('dragging');
@@ -225,9 +230,11 @@ function renderBoxDrawer(){
 
 /* ---------- Box Tab ---------- */
 function renderBox(){
-  const grid = $('#boxGrid'); if(!grid) return;
-  grid.innerHTML = '';
-  state.box.forEach(mon =>{
+    const grid = $('#boxGrid'); if(!grid) return;
+    grid.innerHTML = '';
+    const code = currentLobbyCode();
+    const mons = state.box.filter(m => !code ? true : m.lobbyCode === code);  // ⬅️ Filter
+    mons.forEach(mon => {
     const card = document.createElement('div');
     card.className = 'poke-card';
     card.draggable = true;
@@ -621,6 +628,7 @@ function nzRenderLobby(st){
     localStorage.setItem("playerId", nzPlayerId);
     localStorage.setItem("lobbyCode", nzLobbyCode);
     history.replaceState(null,"",`?code=${nzLobbyCode}`);
+    await wipeRoutesAndReloadFromServer();   // ⬅️ HIER WERDEN DIE ROUTEN GELÖSCHT
     await nzSync();
   };
 
@@ -638,6 +646,7 @@ function nzRenderLobby(st){
       nzPlayerId = j.player.id; localStorage.setItem("playerId", nzPlayerId);
     }
     history.replaceState(null,"",`?code=${nzLobbyCode}`);
+    await wipeRoutesAndReloadFromServer();   // ⬅️ HIER
     await nzSync();
   };
 }
@@ -769,6 +778,7 @@ setInterval(nzSync, NZ_POLL_MS);
     nzPlayerName = nm; localStorage.setItem("playerName", nm);
     const j = await nzApi("joinLobby", { name:nm, code:nzLobbyCode });
     nzPlayerId = j.player.id; localStorage.setItem("playerId", nzPlayerId);
+    await wipeRoutesAndReloadFromServer(); // ⬅️ HIER
   }
   await nzSync();
 })();
@@ -798,9 +808,16 @@ window.NZ = {
     }
   },
 
-  async upsertPokemon(route, species, caught=true){
+  async upsertPokemon(route, species, caught=true, nickname=getnickname()){
     await this.ensureJoined();
-    await nzApi('upsertPokemon', { code: nzLobbyCode, playerId: nzPlayerId, route, species, caught });
+    await nzApi('upsertPokemon', {
+        code: nzLobbyCode,          // <— wird gesendet
+        playerId: nzPlayerId,
+        route,
+        species,
+        caught,
+        nickname
+      });
   },
 
   async assignGlobalSlot(route, slot){
@@ -897,3 +914,113 @@ document.addEventListener("dragstart", e => {
     e.dataTransfer?.setData?.("text/route", mon.routeName);
   } catch {}
 }, true);
+
+
+// TOOLS
+function getnickname(){
+  return nickname.value.trim() || null;
+}
+function currentLobbyCode(){
+    return (window.NZ?.me?.lobbyCode) || localStorage.getItem('lobbyCode') || "";
+  }
+
+  // stabile ID aus dem Namen (damit Encounter-Struktur passt)
+function routeIdFromName(name){
+    let h = 0;
+    for (let i=0; i<name.length; i++) h = (h*31 + name.charCodeAt(i)) | 0;
+    return 'r' + Math.abs(h);
+  }
+
+
+  // ROUTES AND CLEAR POKEMONS ON JOIN
+  function applyServerRoutes(serverRoutes){
+    if (!serverRoutes || !serverRoutes.length) return;
+  
+    // Normalisieren: Array<string> oder Array<{name, ord?}>
+    const server = serverRoutes.map(r =>
+      typeof r === 'string' ? { name: r, ord: 9999 } : { name: r.name, ord: r.ord ?? 9999 }
+    );
+  
+    // NEUEN routes-Array bauen, Encounter fresh (pending)
+    const next = server.map(r => ({
+      id: routeIdFromName(r.name),
+      name: r.name,
+      encounter: { status:'pending', pokemonId:null, pokemonName:'', sprite:null, nickname:'', updatedAt:null }
+    }));
+  
+    state.routes = next;
+    // Auswahl zurücksetzen
+    currentRouteId = state.routes[0]?.id ?? null;
+  
+    save();
+    try { renderRoutes(); renderEncounter(); } catch {}
+  }
+
+  async function wipeRoutesAndReloadFromServer(){
+    clearLocalStateAll();
+    // lokal leeren + UI sofort „leer“ zeigen
+    currentRouteId = null;
+    state.routes = [];
+    save();
+    try { renderRoutes(); renderEncounter(); } catch {}
+  
+    const code = currentLobbyCode();
+    if (!code) return;
+  
+    // Versuche zuerst, über list() die routes zu bekommen
+    try {
+      const st = await nzListState(code);
+      if (Array.isArray(st.routes) && st.routes.length){
+        applyServerRoutes(st.routes);
+        return;
+      }
+    } catch(e){ console.warn('[NZ] list() without routes:', e); }
+  
+    // Fallback: dedizierte Action "listRoutes"
+    try {
+      const resp = await nzApi('listRoutes', { code });
+      const routes = resp?.routes || resp?.data || [];
+      if (Array.isArray(routes) && routes.length){
+        applyServerRoutes(routes);
+      }
+    } catch(e){
+      console.warn('[NZ] listRoutes failed:', e);
+    }
+  }
+
+  async function clearLocalStateAll() {
+    // Trainername behalten
+    const trainerName = state?.user?.name || "";
+  
+    // Lokalen App-State frisch aufsetzen
+    state = EMPTY_STATE();
+    state.user.name = trainerName;
+  
+    // Auswahl / UI-Zwischenzustände leeren
+    selectedFromBoxUid = null;
+    currentRouteId = null;
+  
+    // Optimistic-/Sync-Caches fürs Multiplayer leeren
+    try {
+      if (typeof nzPendingSet !== "undefined") nzPendingSet.clear?.();
+      if (typeof nzPendingClear !== "undefined") nzPendingClear.clear?.();
+      if (typeof nzLastRouteSlots !== "undefined") nzLastRouteSlots = new Map();
+      if (typeof nzLastRouteSlotsByPlayer !== "undefined") nzLastRouteSlotsByPlayer = new Map();
+      if (typeof nzLocalHoldUntil !== "undefined") nzLocalHoldUntil = 0;
+    } catch {}
+  
+    // Speichern & UI sofort neutral rendern
+    save();
+    try {
+      renderRoutes();
+      renderEncounter();
+      renderBox();
+      renderBoxDrawer();
+      renderTeam();
+      renderRouteGroups();
+      renderLocalLobbyBadge?.();
+    } catch {}
+  }
+  
+  
+  
