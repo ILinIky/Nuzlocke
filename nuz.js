@@ -2,6 +2,7 @@
    App + Multiplayer (merged)
    ========================= */
 
+
 /* ---------- Utilities ---------- */
 const $ = sel => document.querySelector(sel);
 const $$ = sel => Array.from(document.querySelectorAll(sel));
@@ -14,10 +15,198 @@ let renderLock = false;
 let nzLocalHoldUntil = 0;
 function holdSync(ms = 1500){ nzLocalHoldUntil = Date.now() + ms; }
 
+/* ---------- POKEDEX ANFANG (ohne nzApi, mit Types) ---------- */
+const POKEDEX_KEY = 'nuz_pokedex_v2'; // gleiches Key wie vorher, wir erkennen alte Caches ohne "types"
+let pokedex = [];                      // Arbeitsspeicher
+let pokedexLoadPromise = null;         // Dedupe paralleler Loads
+let pokedexTypesLoadPromise = null;    // Dedupe Typ-Hydration
+
+function loadPokedexFromLocal(){
+  try{
+    const raw = localStorage.getItem(POKEDEX_KEY);
+    if(!raw) return null;
+    const data = JSON.parse(raw);
+    return Array.isArray(data) ? data : null; // kompatibel zu altem Format
+  }catch{ return null; }
+}
+function savePokedexToLocal(list){
+  localStorage.setItem(POKEDEX_KEY, JSON.stringify(list));
+}
+function listNeedsTypes(list){
+  return Array.isArray(list) && list.some(e => !Array.isArray(e.types) || e.types.length === 0);
+}
+
+// --- Typen direkt aus der PokéAPI holen (ohne nzApi)
+async function fetchTypesFor(idOrName){
+  try{
+    const resp = await fetch(`https://pokeapi.co/api/v2/pokemon/${encodeURIComponent(String(idOrName).toLowerCase())}`);
+    if (!resp.ok) return [];
+    const data = await resp.json();
+    return (data.types || []).map(t => t.type?.name).filter(Boolean);
+  }catch{ return []; }
+}
+
+// --- Einmalige Typ-Hydration für Einträge, denen "types" fehlen (rate-limit-freundlich)
+async function ensurePokedexTypesIfMissing({ concurrency = 24 } = {}){
+  if (!Array.isArray(pokedex) || !pokedex.length) return pokedex;
+  const missing = pokedex.filter(e => !Array.isArray(e.types) || e.types.length === 0);
+  if (missing.length === 0) {
+    console.log('[pokedex-types] loaded (all cached)');
+    return pokedex;
+  }
+  if (pokedexTypesLoadPromise){
+    console.log('[pokedex-types] loading already in progress (dedupe)…');
+    return pokedexTypesLoadPromise;
+  }
+
+  console.log('[pokedex-types] not loaded -> fetching types for', missing.length, 'entries…');
+  pokedexTypesLoadPromise = (async () => {
+    for (let i = 0; i < missing.length; i += concurrency) {
+      const batch = missing.slice(i, i + concurrency);
+      await Promise.all(batch.map(async e => {
+        const key = String(e.id || e.name).toLowerCase();
+        const types = await fetchTypesFor(key);
+        if (types.length) e.types = types;
+      }));
+      // zwischenspeichern & kleine Pause gegen Ratelimits
+      savePokedexToLocal(pokedex);
+      await new Promise(r => setTimeout(r, 120));
+    }
+    savePokedexToLocal(pokedex);
+    document.dispatchEvent(new CustomEvent('nz:pokedex-types-ready'));
+    console.log('[pokedex-types] loaded (hydrated all missing types)');
+    return pokedex;
+  })();
+
+  try { return await pokedexTypesLoadPromise; }
+  finally { pokedexTypesLoadPromise = null; }
+}
+
+// Beim Start: vorhandenen Cache übernehmen; falls ohne Types, im Hintergrund nachladen
+(function initPokedexFromLocal(){
+  const local = loadPokedexFromLocal();
+  if (local && local.length){
+    pokedex = local;
+    console.log('[pokedex] loaded (init/localStorage):', pokedex.length);
+    if (listNeedsTypes(pokedex)) ensurePokedexTypesIfMissing().catch(console.warn);
+  } else {
+    console.log('[pokedex] not loaded at init (no cache)');
+  }
+})();
+
+// Nur laden, wenn NICHT vorhanden; zieht dabei direkt die Types mit (einmalig)
+async function ensurePokedexIfMissing(){
+  // 1) Im Speicher?
+  if (Array.isArray(pokedex) && pokedex.length){
+    console.log('[pokedex] loaded (memory):', pokedex.length);
+    if (listNeedsTypes(pokedex)) ensurePokedexTypesIfMissing().catch(console.warn);
+    return pokedex;
+  }
+  // 2) localStorage?
+  const local = loadPokedexFromLocal();
+  if (local && local.length){
+    pokedex = local;
+    console.log('[pokedex] loaded (localStorage):', pokedex.length);
+    if (listNeedsTypes(pokedex)) ensurePokedexTypesIfMissing().catch(console.warn);
+    return pokedex;
+  }
+  // 3) Lädt bereits?
+  if (pokedexLoadPromise){
+    console.log('[pokedex] loading already in progress (dedupe)…');
+    return pokedexLoadPromise;
+  }
+
+  // 4) Nicht vorhanden → jetzt komplette Liste inkl. Types laden (einmalig)
+  console.log('[pokedex] not loaded -> fetching index + types (one-time)…');
+  pokedexLoadPromise = (async () => {
+    try{
+      // Index laden (Namen + URLs)
+      const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1025');
+      const data = await res.json();
+      const base = (data.results || [])
+        .map(x => {
+          const m = x.url.match(/pokemon\/(\d+)\/?$/);
+          return { id: m ? Number(m[1]) : null, name: x.name };
+        })
+        .filter(x => x.id);
+
+      // Details nur für Types nachziehen, rate-limit-freundlich
+      const out = [];
+      const concurrency = 24;
+      for (let i = 0; i < base.length; i += concurrency) {
+        const batch = base.slice(i, i + concurrency);
+        const filled = await Promise.all(batch.map(async e => {
+          const types = await fetchTypesFor(e.id);
+          return { ...e, types };
+        }));
+        out.push(...filled);
+        // zwischenspeichern, damit Fortschritt nicht verloren geht
+        savePokedexToLocal(out);
+        await new Promise(r => setTimeout(r, 120));
+      }
+
+      pokedex = out;
+      savePokedexToLocal(pokedex);
+      console.log('[pokedex] loaded (network, with types):', pokedex.length);
+      document.dispatchEvent(new CustomEvent('nz:pokedex-ready', { detail:{ count: pokedex.length }}));
+      return pokedex;
+
+    } catch (e){
+      console.warn('[pokedex] fetch failed, using fallback:', e);
+      pokedex = [
+        {id:1,name:'bulbasaur', types:['grass','poison']},
+        {id:4,name:'charmander', types:['fire']},
+        {id:7,name:'squirtle', types:['water']},
+        {id:10,name:'caterpie', types:['bug']},
+        {id:16,name:'pidgey', types:['normal','flying']},
+        {id:19,name:'rattata', types:['normal']},
+        {id:25,name:'pikachu', types:['electric']},
+        {id:35,name:'clefairy', types:['fairy']},
+        {id:39,name:'jigglypuff', types:['normal','fairy']},
+        {id:52,name:'meowth', types:['normal']},
+        {id:54,name:'psyduck', types:['water']},
+        {id:63,name:'abra', types:['psychic']},
+        {id:66,name:'machop', types:['fighting']},
+        {id:74,name:'geodude', types:['rock','ground']},
+        {id:77,name:'ponyta', types:['fire']},
+        {id:81,name:'magnemite', types:['electric','steel']},
+        {id:92,name:'gastly', types:['ghost','poison']},
+        {id:95,name:'onix', types:['rock','ground']},
+        {id:98,name:'krabby', types:['water']},
+        {id:116,name:'horsea', types:['water']},
+        {id:129,name:'magikarp', types:['water']},
+        {id:133,name:'eevee', types:['normal']},
+        {id:143,name:'snorlax', types:['normal']},
+        {id:147,name:'dratini', types:['dragon']}
+      ];
+      return pokedex;
+    } finally {
+      pokedexLoadPromise = null;
+    }
+  })();
+
+  return pokedexLoadPromise;
+}
+
+// Aufruf wie vorher (UI rendert; falls alter Cache, kommen die Types im Hintergrund via Event):
+ensurePokedexIfMissing()
+  .then(()=>{ renderEncounter(); save(); })
+  .catch(()=>{});
+
+document.addEventListener('nz:pokedex-types-ready', () => {
+  // Falls alter Cache ohne Types nachhydriert wurde:
+  renderEncounter?.();
+  renderBox?.();
+  renderBoxDrawer?.();
+  save?.();
+});
+
+
+/* ---------- POKEDEX ENDE ---------- */
 
 /* ---------- Persistence ---------- */
 const LS_KEY = 'nuzlocke_state_v1';
-const POKEDEX_KEY = 'nuz_pokedex_v2';
+
 
 const DEFAULT_ROUTES = [
   'Route 1','Route 2','Route 3','Route 4','Route 5','Route 6',
@@ -42,32 +231,7 @@ let selectedFromBoxUid = null;
 function save(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
 function load(){ const s = localStorage.getItem(LS_KEY); state = s ? JSON.parse(s) : EMPTY_STATE(); }
 
-/* ---------- Pokédex ---------- */
-let pokedex = [];
-async function ensurePokedex(){
-  const cached = localStorage.getItem(POKEDEX_KEY);
-  if(cached){ pokedex = JSON.parse(cached); return; }
-  try{
-    const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1025');
-    const data = await res.json();
-    pokedex = data.results.map(x => {
-      const m = x.url.match(/pokemon\/(\d+)\/?$/);
-      return { id: m?Number(m[1]):null, name: x.name };
-    }).filter(x=>x.id);
-    localStorage.setItem(POKEDEX_KEY, JSON.stringify(pokedex));
-  }catch{
-    pokedex = [
-      {id:1,name:'bulbasaur'},{id:4,name:'charmander'},{id:7,name:'squirtle'},
-      {id:10,name:'caterpie'},{id:16,name:'pidgey'},{id:19,name:'rattata'},
-      {id:25,name:'pikachu'},{id:35,name:'clefairy'},{id:39,name:'jigglypuff'},
-      {id:52,name:'meowth'},{id:54,name:'psyduck'},{id:63,name:'abra'},
-      {id:66,name:'machop'},{id:74,name:'geodude'},{id:77,name:'ponyta'},
-      {id:81,name:'magnemite'},{id:92,name:'gastly'},{id:95,name:'onix'},
-      {id:98,name:'krabby'},{id:116,name:'horsea'},{id:129,name:'magikarp'},
-      {id:133,name:'eevee'},{id:143,name:'snorlax'},{id:147,name:'dratini'}
-    ];
-  }
-}
+
 
 /* ---------- Tabs ---------- */
 function setActiveTab(tab){
@@ -552,10 +716,13 @@ function boot(){
   });
 
   renderRoutes(); renderEncounter(); renderBox(); renderTeam(); renderBoxDrawer(); renderRouteGroups(); renderLocalLobbyBadge(); ensureLogin();
-  ensurePokedex().then(()=>{ renderEncounter(); save(); }).catch(()=>{});
+ 
 
   // ADDONS Für BOOT LOAD --> FIX Damit die BoxDrawer-UI mit Picks der Namen initialisiert wird
   setTimeout(()=>{ renderBoxDrawer(); }, 3000); // Lokale Lobby-Badge initialisieren
+  // am Ende von boot(), irgendwo nach ensureLogin() / ensurePokedex():
+
+
 }
 boot();
 
