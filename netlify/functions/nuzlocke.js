@@ -178,7 +178,7 @@ async function listState({ code }){
   `;
 
   // ➍ Slots dieser Lobby
-  const routeSlots = await sql`SELECT route, slot FROM route_slots WHERE code=${cd}`;
+  const routeSlots = await sql`SELECT route, slot,player_id FROM route_slots WHERE code=${cd}`;
 
   // ➎ Boxen aller Mitglieder – OHNE ANY(${ids}), robust via Subselect
   const rows = await sql/*sql*/`
@@ -243,3 +243,6 @@ export default async (req) => {
     return json({ error: e?.message ?? String(e) }, 500);
   }
 };
+
+
+//Pokemon-Nuzlocke-API TYPES

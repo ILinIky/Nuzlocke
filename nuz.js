@@ -209,7 +209,10 @@ function renderBoxDrawer(){
         </div>
       </div>
       <div class="poke-sprite"><img alt="${toTitle(mon.name)}" src="${mon.sprite}"></div>
-      ${mon.isInTeam?`<div class="ribbon">Im Team -${mon.nickname}</div>`:''}
+      ${mon.isInTeam ? (() => {
+        const placed = placedLabelForRoute(mon.routeName);
+        return `<div class="ribbon">Gepicked von: ${placed ? '  ' + placed : ''}</div>`;
+      })() : ''}
     `;
     card.addEventListener('dragstart', e=>{
       card.classList.add('dragging');
@@ -416,7 +419,10 @@ try {
       slot.querySelector('[data-remove]').onclick = async ()=>{
         console.warn('[NZ] remove button clicked:', mon);
         const route = mon.routeName;
-
+        if(nzPlayerName !== placedLabelForRoute(route)){
+            alert('Du kannst nur Pokémon entfernen, die du selbst in dein Team gepickt hast.');
+            return;
+        }
         state.team[i] = null; 
         mon.isInTeam = false; 
         save(); renderTeam(); renderBox(); renderBoxDrawer(); renderRouteGroups();
@@ -547,6 +553,9 @@ function boot(){
 
   renderRoutes(); renderEncounter(); renderBox(); renderTeam(); renderBoxDrawer(); renderRouteGroups(); renderLocalLobbyBadge(); ensureLogin();
   ensurePokedex().then(()=>{ renderEncounter(); save(); }).catch(()=>{});
+
+  // ADDONS Für BOOT LOAD --> FIX Damit die BoxDrawer-UI mit Picks der Namen initialisiert wird
+  setTimeout(()=>{ renderBoxDrawer(); }, 3000); // Lokale Lobby-Badge initialisieren
 }
 boot();
 
@@ -756,7 +765,12 @@ async function nzHeartbeat(){
 async function nzSync(){
   if (!nzLobbyCode) { nzRenderLobby({ code:"", players:[] }); return; }
   try {
+
     const st = await nzListState(nzLobbyCode);
+
+    // ▼ zusätzlich merken --> Anzeige des momentanen Picks in der Lobby
+    window.nzLastListState = st;
+
     // Cache: letzter Stand route->slot (für Idempotenzcheck)
     nzLastRouteSlots = new Map((st.routeSlots || []).map(x => [x.route, x.slot]));
     nzRenderLobby(st);
@@ -915,6 +929,18 @@ document.addEventListener("dragstart", e => {
   } catch {}
 }, true);
 
+//Utility-Funktionen
+// Wird benutzt um den User zu bekommen für die jeweilige Route, also der Pick für die Box
+function placedLabelForRoute(route){
+    const st = window.nzLastListState || {};
+    const row = (st.routeSlots || []).find(r => r.route === route);
+    const pid = row?.player_id ?? row?.playerId;
+    if (!pid) return null;
+  
+    const p = (st.players || []).find(p => (p.id === pid || p.player_id === pid));
+    return p ? (p.name || p.username || p.display_name || String(pid)) : String(pid);
+  }
+  
 
 // TOOLS
 function getnickname(){
