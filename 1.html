@@ -7,6 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" type="text/css" href="filter.css">
+  <link rel="stylesheet" type="text/css" href="moves.css">
+  <link rel="stylesheet" type="text/css" href="lobby.css">
+  <link rel="stylesheet" type="text/css" href="game.css">
   <style>
     :root{
       --pk-red:#EE1515; --pk-blue:#2554C7; --pk-yellow:#FFCC00; --pk-dark:#1f1f1f; --pk-bg:#0b1020;
@@ -138,6 +142,10 @@
     .player{ display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border:1px solid rgba(255,255,255,.12); border-radius:12px; background:#0b1433 }
     .player .name{ font-weight:800 }
     .player .meta{ color:#9fb1ff; font-size:12px }
+
+
+
+
   </style>
 </head>
 <body>
@@ -151,7 +159,11 @@
       <button class="tab-btn" data-tab="box">Box</button>
       <button class="tab-btn" data-tab="team">team</button>
       <button class="tab-btn" data-tab="allteams">all Teams</button>
+      <button class="tab-btn" data-tab="moves">Moves</button>
+      
       <button class="tab-btn" data-tab="lobby">Lobby</button>
+      <button class="tab-btn" data-tab="games">Spiel</button>
+
     </nav>
   </header>
 
@@ -179,30 +191,31 @@
     <!-- BOX -->
     <section class="panel" id="panel-box">
       <!-- Box-Filterleiste -->
-<div class="box-controls" style="display:flex; gap:8px; align-items:center; margin:8px 0;">
-  <input id="boxSearch" type="text" placeholder="Suche: Name oder Nickname" style="flex:1; padding:8px;">
-  <select id="boxType" style="padding:8px;">
-    <option value="">Alle Typen</option>
-    <!-- wird per JS auch dynamisch gesetzt; das hier ist Fallback -->
-    <option value="grass">Grass</option>
-    <option value="fire">Fire</option>
-    <option value="water">Water</option>
-    <option value="electric">Electric</option>
-    <option value="ice">Ice</option>
-    <option value="fighting">Fighting</option>
-    <option value="poison">Poison</option>
-    <option value="ground">Ground</option>
-    <option value="flying">Flying</option>
-    <option value="psychic">Psychic</option>
-    <option value="bug">Bug</option>
-    <option value="rock">Rock</option>
-    <option value="ghost">Ghost</option>
-    <option value="dragon">Dragon</option>
-    <option value="dark">Dark</option>
-    <option value="steel">Steel</option>
-    <option value="fairy">Fairy</option>
-  </select>
+<!-- Box-Filterleiste (NEU) -->
+<div class="box-controls pk-toolbar">
+  <div class="input-wrap">
+    <span class="poke-ball" aria-hidden="true"></span>
+    <input id="boxSearch" type="search" placeholder="Suche nach Name, Nick, Route oder Typ …" autocomplete="off">
+    <button class="btn ghost" id="boxClear" title="Filter zurücksetzen">Reset</button>
+  </div>
+
+  <div class="chip-groups">
+    <div class="chip-group">
+      <div class="chip-title">Typen</div>
+      <div class="chip-row" id="chipTypes"></div>
+    </div>
+    <div class="chip-group">
+      <div class="chip-title">Routen</div>
+      <div class="chip-row" id="chipRoutes"></div>
+    </div>
+  </div>
+
+  <div class="result-meta">
+    <span id="boxCount">–</span> Treffer
+  </div>
 </div>
+
+
 
       <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:10px">
         <h3 style="margin:0">Pokémon Box</h3>
@@ -216,7 +229,9 @@
     </section>
 
     <!-- SELECT (Team) -->
+     
     <section class="panel" id="panel-team">
+      
       <h3>Team (max. 6)</h3>
       <div class="team-wrap" id="teamWrap"></div>
       <p class="helper pick-hint" id="pickHint" style="margin-top:8px; display:none">
@@ -225,6 +240,7 @@
 
       <div class="card drawer">
         <h3>Box (Schnellzugriff)</h3>
+        
         <div class="box-grid" id="boxDrawer"></div>
       </div>
 
@@ -239,6 +255,60 @@
       <h3>Alle Teams</h3>
       <div id="nz-allteams"></div>
     </section>
+
+    <!-- MOVES -->
+    <section class="panel" id="panel-moves">
+      <div class="pk-toolbar move-toolbar">
+        <div class="input-wrap">
+          <span class="poke-ball" aria-hidden="true"></span>
+          <input id="mvSearch" type="search" placeholder="Moves suchen (Name, Effekt) …" autocomplete="off">
+          <button class="btn ghost" id="mvReset">Reset</button>
+        </div>
+    
+        <div class="row" style="gap:10px; align-items:center; flex-wrap:wrap">
+          <div class="chip-group" style="min-width:280px; flex:1">
+            <div class="chip-title">Typen</div>
+            <div class="chip-row" id="mvTypeChips"></div>
+          </div>
+          <div class="chip-group" style="min-width:220px">
+            <div class="chip-title">Damage Class</div>
+            <div class="chip-row" id="mvClassChips"></div>
+          </div>
+          <div class="row" style="gap:8px; align-items:center">
+            <label class="pill">
+              <span>Tiering</span>
+              <select id="mvTierMode">
+                <option value="score">Score-Feld nutzen</option>
+                <option value="auto">Heuristik</option>
+              </select>
+            </label>
+            <label class="pill">
+              <span>Sortieren</span>
+              <select id="mvSort">
+                <option value="tier">Tier (S→D)</option>
+                <option value="score">Score</option>
+                <option value="power">Power</option>
+                <option value="accuracy">Accuracy</option>
+                <option value="pp">PP</option>
+                <option value="name">Name</option>
+              </select>
+              <button class="btn ghost" id="mvSortDir" title="Richtung">↓</button>
+            </label>
+          </div>
+        </div>
+    
+        <div class="result-meta" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap">
+          <span><b id="mvCount">–</b> Moves</span>
+          <div class="tier-bar" id="mvTierBar">
+            <!-- Tier-Chips via JS -->
+          </div>
+        </div>
+      </div>
+    
+      <div class="moves-grid" id="movesGrid"></div>
+    </section>
+    
+
 
     <!-- LOBBY -->
     <section class="panel" id="panel-lobby">
@@ -263,10 +333,48 @@
       <p class="footer">Multiplayer ist aktiv – Lobby-Tab nutzen. 🎮</p>
     </div>
   </div>
+  <!-- GAME PICKER OVERLAY -->
+  <section class="panel" id="panel-games">
+    <div class="card">
+      <div class="lobby-head" style="margin-bottom:10px">
+        <div class="brand">
+          <div class="logo" aria-hidden="true"></div>
+          <div class="title">Spiel auswählen<small>Pokémon • moderne Auswahl</small></div>
+        </div>
+        <span class="pill" id="gameSelectedPill">Aktuell: –</span>
+      </div>
+  
+      <div class="pk-toolbar">
+        <div class="input-wrap" style="flex:1">
+          <span class="poke-ball" aria-hidden="true"></span>
+          <input id="gameSearch" type="search" placeholder="Suche nach Spiel, Region, Gen …" autocomplete="off">
+          <button class="btn ghost" id="gameClear">Reset</button>
+        </div>
+        <div class="chip-group">
+          <div class="chip-title">Generationen</div>
+          <div class="chip-row" id="genChips"></div>
+        </div>
+      </div>
+  
+      <div class="games-grid" id="gameGrid" aria-live="polite"></div>
+  
+      <div class="game-actions">
+        <div class="helper" id="pickedInfo">Kein Spiel ausgewählt.</div>
+        <div class="row" style="gap:8px">
+          <button class="btn" id="gameCancel">Abbrechen</button>
+          <button class="btn ok" id="gameConfirm" disabled>Auswahl übernehmen</button>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <script type="module" src="./moves_load.js"></script>
   <script type="module" src="./moves.js"></script>
+
   
   <script type="module" src="./nuz.js"></script>
+  <script type="module" src="./filter.js"></script>
  
-    
+  <script type="module" src="./game.js"></script>
 </body>
 </html>

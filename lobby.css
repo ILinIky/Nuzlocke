@@ -1,0 +1,55 @@
+/* Lobby modern Pokémon Style */
+.lobby-card{ display:grid; gap:12px; }
+.lobby-head{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,.08);
+}
+.code-row{ display:grid; gap:10px }
+@media (min-width:800px){
+  .code-row{ grid-template-columns: 1fr 1fr; }
+}
+.name-wrap input, .code-wrap input{ min-width: 0; }
+
+.share-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap }
+.share-link{
+  background:#0b1433; border:1px solid rgba(255,255,255,.18);
+  padding:6px 10px; border-radius:10px; user-select:all;
+}
+
+.online-dot{
+  width:10px; height:10px; border-radius:50%;
+  box-shadow:0 0 0 2px rgba(0,0,0,.35);
+}
+.online-dot.on{ background:#31d0aa; }
+.online-dot.off{ background:#ff6b6b; }
+
+.player.on{ border:1px solid rgba(49,208,170,.25); }
+.player.off{ opacity:.75; }
+.you-badge{
+  font-size:10px; font-weight:900; padding:2px 6px; border-radius:999px;
+  background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.18);
+  text-transform:uppercase; letter-spacing:.5px; color:#fff;
+}
+
+/* Toggle (wie im Team-Tab) */
+.toggle{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:6px 10px; border:1px solid rgba(255,255,255,.18); border-radius:999px;
+  background:#0b1433; font-weight:800; color:#e8ecff; cursor:pointer;
+}
+.toggle input{
+  appearance:none; width:18px; height:18px; border-radius:50%;
+  border:2px solid #dbe3ff; display:inline-block; position:relative; outline:none; cursor:pointer;
+}
+.toggle input:checked{ background:var(--ring); border-color:var(--ring) }
+.toggle span{font-size:12px; letter-spacing:.2px}
+
+/* Mini-Toast */
+.toast{
+  position:fixed; bottom:16px; right:16px;
+  background:#0e183b; border:1px solid rgba(255,255,255,.25);
+  color:#fff; padding:10px 14px; border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,.4);
+  opacity:0; transform:translateY(8px); transition:.18s;
+  z-index:100;
+}
+.toast.show{ opacity:1; transform:translateY(0) }

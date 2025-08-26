@@ -1,0 +1,111 @@
+/* ===== Games Tab (Pokémon Style, modern, animated) ===== */
+
+/* Layout */
+#panel-games .pk-toolbar{
+    display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:10px;
+  }
+  #panel-games .input-wrap{
+    display:flex; align-items:center; gap:8px;
+    background:#0d153a; border:1px solid rgba(255,255,255,.18);
+    padding:8px 10px; border-radius:12px; flex:1 1 280px;
+  }
+  #panel-games .input-wrap input{
+    background:transparent; border:none; outline:none; color:#eef2ff; flex:1;
+  }
+  #panel-games .chip-group{ display:flex; align-items:center; gap:10px; flex-wrap:wrap }
+  #panel-games .chip-title{ color:#9fb1ff; font-weight:800; font-size:12px }
+  #panel-games .chip-row{ display:flex; gap:8px; flex-wrap:wrap }
+  
+  #panel-games .game-actions{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    margin-top:12px; padding-top:8px; border-top:1px solid rgba(255,255,255,.08)
+  }
+  #panel-games .helper{ color:#9fb1ff }
+  
+  /* Gen-Chips – immer gut lesbar */
+  .gen-chip{
+    padding:6px 12px; border-radius:999px;
+    border:1px solid rgba(255,255,255,.22);
+    background: linear-gradient(180deg,#101a40,#0c1433);
+    color:#eef2ff; font-weight:900; font-size:12px; letter-spacing:.2px;
+    cursor:pointer; transition:.16s; text-shadow:0 1px 0 rgba(0,0,0,.6);
+  }
+  .gen-chip:hover{ transform:translateY(-1px); box-shadow:0 8px 18px rgba(0,0,0,.35) }
+  .gen-chip.active{
+    background: linear-gradient(180deg, color-mix(in oklab, var(--ring) 24%, #0e183b), #0e183b);
+    color:#fff; box-shadow:0 0 0 2px var(--ring) inset, 0 10px 28px rgba(255,210,63,.12);
+  }
+  
+  /* Grid + 3D Parallax */
+  .games-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(220px,1fr)); gap:14px; margin-top:12px; perspective:900px }
+  
+  /* Cards */
+  .game-card{
+    position:relative; border:1px solid rgba(255,255,255,.12); border-radius:16px; padding:12px;
+    background:linear-gradient(180deg,#0d1a3f,#0b1430);
+    box-shadow:0 10px 28px rgba(0,0,0,.35);
+    display:grid; gap:8px; cursor:pointer; overflow:hidden;
+  
+    /* Parallax Tilt */
+    --accent: var(--ring);
+    --tiltX: 0deg; --tiltY: 0deg;
+    transform: rotateX(var(--tiltY)) rotateY(var(--tiltX));
+    transform-style: preserve-3d;
+    transition: transform .18s ease, box-shadow .18s ease, outline-color .18s ease;
+    outline: 1px solid rgba(255,255,255,.10);
+  }
+  .game-card:hover{ transform: translateY(-3px) rotateX(var(--tiltY)) rotateY(var(--tiltX)); }
+  .game-card.selected{ outline: 2px solid var(--accent); box-shadow: 0 18px 48px color-mix(in oklab, var(--accent) 25%, transparent) }
+  
+  /* Glow */
+  .game-card .glow{
+    position:absolute; inset:-2px; border-radius:18px; pointer-events:none;
+    background: radial-gradient(70% 50% at 80% 20%, color-mix(in oklab, var(--accent) 40%, transparent), transparent 70%);
+    opacity:.25; transition:.18s;
+  }
+  .game-card:hover .glow{ opacity:.45 }
+  
+  /* Hintergrund-Art (als <img>) */
+  .game-card .art{ position:absolute; inset:-6px; border-radius:16px; pointer-events:none; overflow:hidden }
+  .game-card .art-img{
+    position:absolute; right:-6px; bottom:-6px; width:68%; height:auto;
+    filter: drop-shadow(0 6px 18px rgba(0,0,0,.42));
+    opacity:.34; transform: translateZ(30px) scale(1.04);
+    animation: kenburns 18s ease-in-out infinite;
+    transition: opacity .18s ease, transform .25s ease;
+  }
+  .game-card:hover .art-img{ opacity:.42; transform: translateZ(30px) scale(1.08) }
+  
+  @keyframes kenburns{
+    0%   { transform: translateZ(30px) scale(1.02) translateY(0) }
+    50%  { transform: translateZ(30px) scale(1.10) translateY(-1.5%) }
+    100% { transform: translateZ(30px) scale(1.02) translateY(0) }
+  }
+  
+  /* Sheen */
+  .game-card::after{
+    content:""; position:absolute; inset:-40% -80%; pointer-events:none; border-radius:24px;
+    background: linear-gradient(75deg, transparent 40%, rgba(255,255,255,.18) 50%, transparent 60%);
+    transform: translateX(-60%) rotate(10deg); opacity:.0;
+    transition: transform .9s ease, opacity .25s ease;
+  }
+  .game-card:hover::after{ transform: translateX(60%) rotate(10deg); opacity:.7 }
+  
+  /* Text über der Art */
+  .game-card .head, .game-card .rgn, .game-card .chips, .game-card .badge{ position: relative; z-index: 2 }
+  .game-card .head{ display:flex; align-items:center; justify-content:space-between; gap:8px }
+  .game-card .name{ font-weight:900; letter-spacing:.2px }
+  .game-card .badge{
+    padding:2px 8px; border-radius:999px; font-weight:900; font-size:11px;
+    border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.06)
+  }
+  .game-card .rgn{ font-weight:800; color:#dfe6ff; font-size:12px }
+  .game-card .chips{ display:flex; gap:6px; flex-wrap:wrap }
+  .type-badge{
+    display:inline-block; padding:4px 8px; border-radius:999px; font-size:11px; font-weight:900;
+    background:#0d153a; border:1px solid rgba(255,255,255,.18); color:#eef2ff
+  }
+  
+  /* Header-Pill */
+  #gameSelectedPill{ display:inline-flex; align-items:center; gap:8px; }
+  

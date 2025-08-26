@@ -193,16 +193,55 @@ ensurePokedexIfMissing()
   .then(()=>{ renderEncounter(); save(); })
   .catch(()=>{});
 
-document.addEventListener('nz:pokedex-types-ready', () => {
-  // Falls alter Cache ohne Types nachhydriert wurde:
-  renderEncounter?.();
-  renderBox?.();
-  renderBoxDrawer?.();
-  save?.();
-});
+
 
 
 /* ---------- POKEDEX ENDE ---------- */
+
+/* ---------- POKEDEX UTILITYS ---------- */
+// --- Name-Normalisierung für PokeAPI-/Cache-Namen
+function normMonName(name){
+    const k = String(name || '').trim().toLowerCase();
+    const alias = {
+      'nidoran♀': 'nidoran-f', 'nidoran♀️': 'nidoran-f', 'nidoran♂': 'nidoran-m',
+      "farfetch’d": 'farfetchd', "farfetch'd": 'farfetchd',
+      'mr. mime': 'mr-mime', 'mime jr.': 'mime-jr',
+      'type: null': 'type-null',
+      'tapu koko': 'tapu-koko', 'tapu lele': 'tapu-lele', 'tapu bulu': 'tapu-bulu', 'tapu fini': 'tapu-fini',
+      'ho-oh': 'ho-oh', 'porygon-z': 'porygon-z',
+      'jangmo-o': 'jangmo-o', 'hakamo-o': 'hakamo-o', 'kommo-o': 'kommo-o',
+      'flabébé': 'flabebe'
+    };
+    return alias[k] || k;
+  }
+
+// --- Nur lokalen Pokédex lesen (kein Netz)
+function getLocalPokedex(){
+    try{
+      const raw = localStorage.getItem('nuz_pokedex_v2');
+      if(!raw) return [];
+      const data = JSON.parse(raw);
+      return Array.isArray(data) ? data : [];
+    }catch{
+      return [];
+    }
+  }
+  
+  /**
+   * Liefert die Types eines Pokémon aus dem lokalen Pokédex.
+   * @param {string} name - z.B. "Pikachu", "Mr. Mime", "Nidoran♀"
+   * @returns {string[]} z.B. ["electric"] oder []
+   */
+  function getTypesByNameFromLocal(name){
+    const list = getLocalPokedex();
+    if (!list.length) return [];
+    const key = normMonName(name);
+    const entry = list.find(e => (e.name || '').toLowerCase() === key);
+    // liefert eine Kopie, um Mutationen außerhalb zu vermeiden
+    return Array.isArray(entry?.types) ? entry.types.slice() : [];
+  }
+
+  /* ---------- POKEDEX UTILITYS ENDE ---------- */
 
 /* ---------- Persistence ---------- */
 const LS_KEY = 'nuzlocke_state_v1';
@@ -327,7 +366,8 @@ function renderEncounter(){
     const exists = state.box.find(m=>m.routeName===rt.name);
     if(!exists){
       state.box.push({ uid:uid(), id:chosen.id, name:chosen.name, sprite:SPRITE(chosen.id), routeName:rt.name, nickname:nick.value.trim(), caughtAt:now(), isInTeam:false,
-      lobbyCode: currentLobbyCode()    // ⬅️ neu
+      lobbyCode: currentLobbyCode(),
+      type: getTypesByNameFromLocal(chosen.name)    // ⬅️ neu
      });
     }
     save(); renderRoutes(); renderEncounter(); renderBox(); renderBoxDrawer(); renderRouteGroups();
@@ -407,11 +447,12 @@ function renderBox(){
     card.draggable = true;
     card.dataset.uid = mon.uid;
     card.setAttribute('data-route', mon.routeName);
+    console.error('[NZ] renderBox() - card:', card, 'mon:', mon);
     card.innerHTML = `
       <div class="poke-top">
         <div>
           <div class="poke-name">#${mon.id} ${toTitle(mon.name)} ${mon.nickname?`“${mon.nickname}”`:''}</div>
-          <div class="tag">${mon.routeName}</div>
+          <div class="tag">${mon.routeName} + ${mon.type}</div>
         </div>
         <button class="btn bad" data-remove>Entfernen</button>
       </div>
@@ -692,7 +733,27 @@ function ensureLogin(){
     overlay.setAttribute('aria-hidden', String(!shouldShow));
   }
   $('#playerNameBadge').textContent = state.user?.name || '–';
+ 
 }
+
+function openNameDialog(){
+    const overlay = $('#loginOverlay');
+    if(!overlay) return;
+    overlay.hidden = false;
+    overlay.style.display = 'grid';
+    overlay.setAttribute('aria-hidden', 'false');
+  
+    const input = $('#trainerName');
+    if (input) {
+      input.value = state?.user?.name || nzPlayerName || '';
+      setTimeout(()=> input.focus(), 0);
+      
+     
+    }
+  }
+
+  
+  
 
 /* ---------- Boot ---------- */
 function boot(){
@@ -712,7 +773,12 @@ function boot(){
   $('#startBtn')?.addEventListener('click', ()=>{
     const name = $('#trainerName').value.trim();
     if(!name) return alert('Bitte gib einen Namen ein.');
+    localStorage.setItem("playerName", name);
+    nzPlayerName = name;                              // ⬅️ wichtig
+    $('#playerNameBadge').textContent = name;
     state.user.name = name; save(); ensureLogin();
+    nzSync();
+    setTimeout(()=> nzJoin.click(), 3000); // ⬅️ Namen ändern
   });
 
   renderRoutes(); renderEncounter(); renderBox(); renderTeam(); renderBoxDrawer(); renderRouteGroups(); renderLocalLobbyBadge(); ensureLogin();
@@ -722,6 +788,7 @@ function boot(){
   setTimeout(()=>{ renderBoxDrawer(); }, 3000); // Lokale Lobby-Badge initialisieren
   // am Ende von boot(), irgendwo nach ensureLogin() / ensurePokedex():
 
+  
 
 }
 boot();
@@ -774,58 +841,208 @@ async function nzListState(code) {
   throw new Error(`HTTP ${r.status} ${t}`);
 }
 
-// --- Lobby render ---
+
+
+// --- Lobby render START---
+// --- Lobby render (modern Pokémon style) ---
 function nzRenderLobby(st){
-  if (!elLobbyPane) return;
-  const online = (st.players||[]).filter(p=>p.online).length;
-  elLobbyPane.innerHTML = `
-    <div class="row" style="margin:.5rem 0">
-      <label>Lobby-Code:</label>
-      <input id="nzCode" style="text-transform:uppercase" value="${esc(nzLobbyCode || st.code || "")}" placeholder="ABC123">
-      <label>Name:</label>
-      <input id="nzName" value="${esc(nzPlayerName || "")}" placeholder="Name">
-      <button id="nzCreate" class="btn">Erstellen</button>
-      <button id="nzJoin" class="btn">${nzPlayerId ? "Verbinden" : "Beitreten"}</button>
-      <span class="helper">Link: <code>${esc(location.origin+location.pathname)}?code=${esc(nzLobbyCode||st.code||"")}</code></span>
-    </div>
-    <div>Spieler in Lobby: ${(st.players||[]).length} (online: ${online})</div>
-    <div class="players" style="margin-top:.5rem">
-      ${(st.players||[]).map(p=>`
-        <div class="player"><span class="name">${esc(p.name)}</span><span class="meta">${p.online?"online":"offline"}</span></div>
-      `).join("")}
-    </div>
-  `;
-
-  elLobbyPane.querySelector("#nzCreate").onclick = async ()=>{
-    const nm = elLobbyPane.querySelector("#nzName").value.trim() || "Spieler";
-    nzPlayerName = nm; localStorage.setItem("playerName", nm);
-    const j = await nzApi("joinLobby", { name:nm, code:"" });
-    nzPlayerId = j.player.id; nzLobbyCode = j.code;
-    localStorage.setItem("playerId", nzPlayerId);
-    localStorage.setItem("lobbyCode", nzLobbyCode);
-    history.replaceState(null,"",`?code=${nzLobbyCode}`);
-    await wipeRoutesAndReloadFromServer();   // ⬅️ HIER WERDEN DIE ROUTEN GELÖSCHT
-    await nzSync();
-  };
-
-  elLobbyPane.querySelector("#nzJoin").onclick = async ()=>{
-    const nm = elLobbyPane.querySelector("#nzName").value.trim() || "Spieler";
-    nzPlayerName = nm; localStorage.setItem("playerName", nm);
-    const cd = (elLobbyPane.querySelector("#nzCode").value.trim() || "").toUpperCase();
-    if (!cd) return alert("Bitte Lobby-Code eingeben");
-    nzLobbyCode = cd; localStorage.setItem("lobbyCode", nzLobbyCode);
-
-    if (nzPlayerId) {
-      await nzApi("rejoinLobby", { playerId: nzPlayerId, name: nzPlayerName, code: nzLobbyCode });
-    } else {
-      const j = await nzApi("joinLobby", { name: nzPlayerName, code: nzLobbyCode });
-      nzPlayerId = j.player.id; localStorage.setItem("playerId", nzPlayerId);
+    if (!elLobbyPane) return;
+  
+    const _esc = window.esc || (s => String(s)
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;").replace(/"/g,"&quot;"));
+  
+    const players = Array.isArray(st.players) ? st.players : [];
+    const onlineCount = players.filter(p=>p.online).length;
+    const code = (nzLobbyCode || st.code || "").toUpperCase();
+    const name = nzPlayerName || "";
+    const shareUrl = `${location.origin}${location.pathname}?code=${code || ""}`;
+    const joinLabel = nzPlayerId ? "Verbinden" : "Beitreten";
+  
+    elLobbyPane.innerHTML = `
+      <div class="card lobby-card">
+        <div class="lobby-head">
+          <div class="brand">
+            <div class="logo" aria-hidden="true"></div>
+            <div class="title">Lobby<small>Multiplayer • Pokémon Style</small></div>
+          </div>
+          <div class="pill">
+            <span class="online-dot on"></span>
+            <b>${onlineCount}</b>/<b>${players.length}</b> online
+          </div>
+        </div>
+  
+        <div class="pk-toolbar">
+          <div class="code-row">
+            <div class="input-wrap code-wrap">
+              <span class="poke-ball" aria-hidden="true"></span>
+              <input id="nzCode" type="text" inputmode="latin"
+                maxlength="8" style="text-transform:uppercase"
+                placeholder="ABC123" value="${_esc(code)}">
+              <button class="btn ghost" id="nzGen" title="Neuen Code erzeugen">Neu</button>
+              <button class="btn ghost" id="nzCopy" title="Link kopieren">Kopieren</button>
+              <button class="btn ghost" id="nzShare" title="Teilen">Teilen</button>
+            </div>
+  
+            <div class="input-wrap name-wrap">
+              <span class="poke-ball" aria-hidden="true"></span>
+              <input id="nzName" type="text" hidden="true" placeholder="Dein Name" value="${_esc(name)}" readonly>
+<button id="nzRename" class="btn warn" title="Name ändern">Name ändern</button>
+<button id="nzCreate" class="btn ok">Erstellen</button>
+<button id="nzJoin" class="btn">${joinLabel}</button>
+            </div>
+          </div>
+  
+          <div class="share-row">
+            <span class="helper">Link:</span>
+            <code id="nzShareLink" class="share-link">${_esc(shareUrl)}</code>
+          </div>
+        </div>
+  
+        <div class="lobby-tools">
+          <div class="input-wrap">
+            <span class="poke-ball" aria-hidden="true"></span>
+            <input id="nzPlayerSearch" type="search" placeholder="Spieler durchsuchen …">
+            <label class="toggle">
+              <input type="checkbox" id="nzHideOffline">
+              <span>Offline ausblenden</span>
+            </label>
+          </div>
+        </div>
+  
+        <div class="players" id="playersList">
+          ${players
+            .slice()
+            .sort((a,b)=> (b.online - a.online) || String(a.name||'').localeCompare(String(b.name||'')))
+            .map(p=>`
+              <div class="player ${p.online?'on':'off'}" data-name="${_esc((p.name||'').toLowerCase())}">
+                <div style="display:flex; align-items:center; gap:10px">
+                  <span class="online-dot ${p.online?'on':'off'}" title="${p.online?'online':'offline'}"></span>
+                  <span class="name">${_esc(p.name||'Trainer')}</span>
+                  ${nzPlayerId && p.id===nzPlayerId ? '<span class="you-badge">you</span>' : ''}
+                </div>
+                <span class="meta">${p.online?'online':'offline'}</span>
+              </div>
+            `).join('')}
+        </div>
+      </div>
+    `;
+  
+    // ------- Behavior -------
+    const $ = sel => elLobbyPane.querySelector(sel);
+    const nzCodeEl = $('#nzCode');
+    const nzNameEl = $('#nzName');
+    const shareLinkEl = $('#nzShareLink');
+    const searchEl = $('#nzPlayerSearch');
+    const hideOffEl = $('#nzHideOffline');
+    const listEl = $('#playersList');
+  
+    // Uppercase & Zeichenfilter für Code + Link live updaten
+    nzCodeEl?.addEventListener('input', ()=>{
+      const cleaned = nzCodeEl.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8);
+      if (cleaned !== nzCodeEl.value) nzCodeEl.value = cleaned;
+      shareLinkEl.textContent = `${location.origin}${location.pathname}?code=${cleaned}`;
+    });
+  
+    // Code generieren
+    $('#nzGen')?.addEventListener('click', ()=>{
+      const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // ohne I,O,1,0
+      const gen = Array.from({length:6}, ()=> alphabet[Math.floor(Math.random()*alphabet.length)]).join('');
+      nzCodeEl.value = gen;
+      shareLinkEl.textContent = `${location.origin}${location.pathname}?code=${gen}`;
+    });
+  
+    // Link kopieren
+    $('#nzCopy')?.addEventListener('click', async ()=>{
+      try{
+        await navigator.clipboard.writeText(shareLinkEl.textContent);
+        toast('Link kopiert!');
+      }catch{ toast('Konnte nicht kopieren'); }
+    });
+  
+    // Web Share API / Fallback Kopieren
+    $('#nzShare')?.addEventListener('click', async ()=>{
+      const url = shareLinkEl.textContent;
+      if(navigator.share){
+        try{ await navigator.share({ title:'Nuzlocke Lobby', url }); }
+        catch(_e){}
+      }else{
+        try{ await navigator.clipboard.writeText(url); toast('Link kopiert!'); }catch{}
+      }
+    });
+  
+    // Spieler-Filter
+    function applyPlayerFilter(){
+      const q = (searchEl?.value||'').toLowerCase().trim();
+      const hideOff = !!hideOffEl?.checked;
+      listEl?.querySelectorAll('.player').forEach(row=>{
+        const name = row.dataset.name || '';
+        const isOff = row.classList.contains('off');
+        const match = !q || name.includes(q);
+        const show = match && (!hideOff || !isOff);
+        row.style.display = show ? '' : 'none';
+      });
     }
-    history.replaceState(null,"",`?code=${nzLobbyCode}`);
-    await wipeRoutesAndReloadFromServer();   // ⬅️ HIER
-    await nzSync();
-  };
-}
+    searchEl?.addEventListener('input', applyPlayerFilter);
+    hideOffEl?.addEventListener('change', applyPlayerFilter);
+    applyPlayerFilter();
+  
+    // Mini-Toast
+    function toast(msg){
+      let t = elLobbyPane.querySelector('.toast');
+      if(!t){
+        t = document.createElement('div');
+        t.className = 'toast';
+        t.textContent = msg;
+        elLobbyPane.appendChild(t);
+      }else{
+        t.textContent = msg;
+      }
+      t.classList.add('show');
+      setTimeout(()=> t.classList.remove('show'), 1200);
+    }
+  
+    // ------- Deine bestehende Logik (unverändert) -------
+    elLobbyPane.querySelector("#nzCreate").onclick = async ()=>{
+      const nm = (nzNameEl?.value || '').trim() || "Spieler";
+      nzPlayerName = nm; localStorage.setItem("playerName", nm);
+      const j = await nzApi("joinLobby", { name:nm, code:"" });
+      nzPlayerId = j.player.id; nzLobbyCode = j.code;
+      localStorage.setItem("playerId", nzPlayerId);
+      localStorage.setItem("lobbyCode", nzLobbyCode);
+      history.replaceState(null,"",`?code=${nzLobbyCode}`);
+      await wipeRoutesAndReloadFromServer();   // ⬅️ bleibt wie gehabt
+      await nzSync();
+    };
+  
+    elLobbyPane.querySelector("#nzJoin").onclick = async ()=>{
+      const nm = (nzNameEl?.value || '').trim() || "Spieler";
+      nzPlayerName = nm; localStorage.setItem("playerName", nm);
+      const cd = (nzCodeEl?.value || '').trim().toUpperCase();
+      if (!cd) return alert("Bitte Lobby-Code eingeben");
+      nzLobbyCode = cd; localStorage.setItem("lobbyCode", nzLobbyCode);
+  
+      if (nzPlayerId) {
+        await nzApi("rejoinLobby", { playerId: nzPlayerId, name: nzPlayerName, code: nzLobbyCode });
+      } else {
+        const j = await nzApi("joinLobby", { name: nzPlayerName, code: nzLobbyCode });
+        nzPlayerId = j.player.id; localStorage.setItem("playerId", nzPlayerId);
+      }
+      history.replaceState(null,"",`?code=${nzLobbyCode}`);
+      await wipeRoutesAndReloadFromServer();   // ⬅️ bleibt wie gehabt
+      await nzSync();
+    };
+
+    const renameBtn = $('#nzRename');
+
+// „Name ändern“ öffnet wieder den Start-Dialog
+renameBtn?.addEventListener('click', openNameDialog);
+
+  }
+  
+// --- Lobby render ENDE ---
+
+
 
 // --- All Teams render (Sprites wie in der Box) ---
 function nzRenderAllTeams(st){

@@ -1,0 +1,60 @@
+/* ---------- Moves List ---------- */
+.moves-grid{
+    display:grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr));
+    gap:14px; margin-top:12px;
+  }
+  .move-card{
+    display:grid; gap:8px; padding:12px; border-radius:14px;
+    border:1px solid rgba(255,255,255,.12);
+    background:linear-gradient(180deg,#0d1a3f,#0b1430);
+    box-shadow:0 8px 26px rgba(0,0,0,.35);
+  }
+  .move-head{ display:flex; justify-content:space-between; align-items:center; gap:10px }
+  .move-name{ font-weight:900; letter-spacing:.2px; text-transform:capitalize }
+  .type-badge, .class-badge{
+    display:inline-flex; align-items:center; gap:8px; padding:4px 8px; border-radius:999px;
+    border:1px solid rgba(255,255,255,.18); font-weight:800; font-size:12px;
+    background:linear-gradient(135deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+  }
+  .type-badge{ text-transform:capitalize }
+  .class-physical{ background:linear-gradient(135deg,#4a1b15,#2a0e0b); color:#ffd6c9 }
+  .class-special{  background:linear-gradient(135deg,#122d4a,#09182c); color:#cfe3ff }
+  .class-status{   background:linear-gradient(135deg,#301a3e,#1a0f26); color:#ead1ff }
+  
+  .move-stats{ display:flex; gap:8px; flex-wrap:wrap; color:#bcd1ff; font-size:12px }
+  .stat-pill{
+    padding:4px 8px; border-radius:8px; background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.10); font-weight:800;
+  }
+  .move-effect{ color:#9fb1ff; font-size:12px }
+  
+  .tier-badge{
+    padding:4px 10px; border-radius:999px; font-weight:900; font-size:12px;
+    border:1px solid rgba(255,255,255,.20);
+    box-shadow:0 6px 18px rgba(0,0,0,.25);
+  }
+  .tier-S{ background:linear-gradient(135deg,#ffd23f,#ffb703); color:#1a1200 }
+  .tier-A{ background:linear-gradient(135deg,#2fdf9d,#0fb980); color:#0a1c15 }
+  .tier-B{ background:linear-gradient(135deg,#5aa8ff,#2b6fda); color:#06121f }
+  .tier-C{ background:linear-gradient(135deg,#b6c3f8,#7f8cc7); color:#0d1022 }
+  .tier-D{ background:linear-gradient(135deg,#ff6b6b,#b73333); color:#230b0b }
+  
+  .tier-bar{ display:flex; gap:8px; flex-wrap:wrap }
+  .tier-chip{
+    display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px;
+    border:1px solid rgba(255,255,255,.18); cursor:pointer; font-weight:900; font-size:12px;
+    background:rgba(255,255,255,.06);
+  }
+  .tier-chip.active{ box-shadow:0 0 0 2px var(--ring) inset }
+  .tier-chip .count{ background:rgba(255,255,255,.12); padding:2px 8px; border-radius:999px }
+  
+  /* Chips & Pills reuse */
+  .pill{ display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(255,255,255,.12);
+    background:#0d153a; padding:8px 10px; border-radius:12px; font-weight:800 }
+
+    /* Support/Utility Tier (ehem. D) */
+.tier-SUP{
+    background: linear-gradient(135deg,#8a3cff,#4b1a83);
+    color:#f6e9ff;
+  }
+  
