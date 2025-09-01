@@ -1504,7 +1504,7 @@ renameBtn?.addEventListener('click', openNameDialog);
       nzLobbyCode = cd; localStorage.setItem("lobbyCode", nzLobbyCode);
       try{
       if (nzPlayerId) {
-        alert("rejoin");
+        //alert("rejoin");
         await nzApi("rejoinLobby", { playerId: nzPlayerId, name: nzPlayerName, code: nzLobbyCode });
       } else {
         const j = await nzApi("joinLobby", { name: nzPlayerName, code: nzLobbyCode });

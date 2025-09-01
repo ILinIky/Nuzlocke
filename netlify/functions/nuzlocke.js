@@ -16,9 +16,8 @@ const normRoute = r => String(r || "").trim().slice(0, 80);
 const nowIso    = () => new Date().toISOString();
 const genCode   = (n=6)=>{const A="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let s="";for(let i=0;i<n;i++)s+=A[Math.floor(Math.random()*A.length)];return s};
 
-async function ensureTables() {
-  console.log("Ensuring tables...");
-  // Basis-Tabellen
+async function setup()  {
+  // Tabellen anlegen
   await sql`CREATE TABLE IF NOT EXISTS players (
     id text PRIMARY KEY,
     name text NOT NULL,
@@ -72,28 +71,39 @@ async function ensureTables() {
     name_lower text,         -- optional (falls nur Name gebannt werden soll)
     created_at timestamptz NOT NULL DEFAULT now()
   )`;
+
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS lobby_bans_code_pid_uidx ON lobby_bans (code, player_id)`;
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS lobby_bans_code_name_uidx ON lobby_bans (code, name_lower)`;
 
-//Douplikate entfernen (player_id)
+  //Douplikate entfernen (player_id)
 await sql`ALTER TABLE players ADD COLUMN IF NOT EXISTS name_lower text`;
 await sql`CREATE INDEX IF NOT EXISTS players_name_lower_idx ON players(name_lower)`;
-await sql`UPDATE players SET name_lower = lower(name) WHERE name_lower IS NULL`;
 
-  
+ // ---- Migrationen / Ergänzungen (idempotent) ----
+  // route_slots: fehlende Spalte code (Altbestand)
+  try { await sql`ALTER TABLE route_slots ADD COLUMN IF NOT EXISTS code text`; } catch {}
+  try { await sql`CREATE UNIQUE INDEX IF NOT EXISTS route_slots_code_route_uidx ON route_slots (code, route)`; } catch {}
+
+   // lobbies: host_id
+   try { await sql`ALTER TABLE lobbies ADD COLUMN IF NOT EXISTS host_id text`; } catch {}
+
+     // lobby_members: role & banned
+  try { await sql`ALTER TABLE lobby_members ADD COLUMN IF NOT EXISTS role text DEFAULT 'player'`; } catch {}
+  try { await sql`ALTER TABLE lobby_members ADD COLUMN IF NOT EXISTS banned boolean NOT NULL DEFAULT false`; } catch {}
+}
+
+async function ensureTables() {
+  console.log("Ensuring tables...");
+  // Basis-Tabellen
+ 
+
+
+//Douplikate entfernen (player_id)
+//await sql`UPDATE players SET name_lower = lower(name) WHERE name_lower IS NULL`;
 
   // ---- Migrationen / Ergänzungen (idempotent) ----
   // route_slots: fehlende Spalte code (Altbestand)
-  try { await sql`ALTER TABLE route_slots ADD COLUMN IF NOT EXISTS code text`; } catch {}
-  try { await sql`UPDATE route_slots SET code='__GLOBAL__' WHERE code IS NULL`; } catch {}
-  try { await sql`CREATE UNIQUE INDEX IF NOT EXISTS route_slots_code_route_uidx ON route_slots (code, route)`; } catch {}
-
-  // lobbies: host_id
-  try { await sql`ALTER TABLE lobbies ADD COLUMN IF NOT EXISTS host_id text`; } catch {}
-
-  // lobby_members: role & banned
-  try { await sql`ALTER TABLE lobby_members ADD COLUMN IF NOT EXISTS role text DEFAULT 'player'`; } catch {}
-  try { await sql`ALTER TABLE lobby_members ADD COLUMN IF NOT EXISTS banned boolean NOT NULL DEFAULT false`; } catch {}
+  //try { await sql`UPDATE route_slots SET code='__GLOBAL__' WHERE code IS NULL`; } catch {}
 
   // Falls es Lobbies ohne host_id gibt, ersten Member zum Host machen
   try {
@@ -135,7 +145,8 @@ async function createLobby({ name, code }){
   await sql`INSERT INTO lobbies(code) VALUES(${cd}) ON CONFLICT(code) DO NOTHING`;
 
   const id = (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)) + "-" + Date.now();
-  await sql`INSERT INTO players(id,name,joined_at,last_seen) VALUES(${id},${nm},now(),now()) ON CONFLICT(id) DO NOTHING`;
+  const nametolower = nm.toLowerCase();
+  await sql`INSERT INTO players(id,name,joined_at,last_seen,name_lower) VALUES(${id},${nm},now(),now(),${nametolower}) ON CONFLICT(id) DO NOTHING`;
 
   // ⛔ Ban-Check
   const nmLower = nm.toLowerCase();
@@ -171,7 +182,8 @@ async function joinLobby({ name, code }){
   await sql`INSERT INTO lobbies(code) VALUES(${cd}) ON CONFLICT(code) DO NOTHING`;
 
   const id = (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)) + "-" + Date.now();
-  await sql`INSERT INTO players(id,name,joined_at,last_seen) VALUES(${id},${nm},now(),now()) ON CONFLICT(id) DO NOTHING`;
+  const nametolower = nm.toLowerCase();
+  await sql`INSERT INTO players(id,name,joined_at,last_seen) VALUES(${id},${nm},now(),now(),${nametolower}) ON CONFLICT(id) DO NOTHING`;
 
   // ⛔ Ban-Check
   const nmLower = nm.toLowerCase();
