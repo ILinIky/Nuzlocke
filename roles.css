@@ -1,0 +1,26 @@
+/* Rollen-Badge */
+.role-badge{
+    margin-left:8px; padding:2px 8px; border-radius:999px;
+    font-size:11px; font-weight:900; border:1px solid rgba(255,255,255,.2);
+    background:#0f1a44; color:#e8ecff;
+  }
+  .role-badge.host{ background:#2a1b0a; border-color:#ffb24a; color:#ffd23f }
+  .role-badge.cohost{ background:#0a1f2a; border-color:#4ad5ff; color:#7fddff }
+  .role-badge.spectator{ background:#161616; border-color:#666; color:#aaa }
+  
+  /* Kontextmenü */
+  .ctx-menu{
+    position:fixed; z-index:9999; min-width:220px; overflow:hidden;
+    background:#0b1433; border:1px solid rgba(255,255,255,.18); border-radius:12px;
+    box-shadow:0 14px 50px rgba(0,0,0,.5);
+  }
+  .ctx-menu > button{
+    display:block; width:100%; text-align:left; padding:10px 12px;
+    background:transparent; border:none; color:#e8ecff; cursor:pointer;
+  }
+  .ctx-menu > button:hover{ background:#0e183b }
+  .ctx-menu hr{ border:none; height:1px; background:rgba(255,255,255,.12); margin:4px 0 }
+
+  /* z. B. Buttons leicht dämpfen */
+.role-spectator .btn.ok,
+.role-spectator .btn.bad{ opacity:.6; cursor:not-allowed }

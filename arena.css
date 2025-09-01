@@ -1,0 +1,173 @@
+/* arena.css v2 – Modern Glass + Neon Glow (refined)
+   - Hover nur auf die Karte (kein Text-/Banner-Zoom)
+   - Typ-abhängige Bannerfarben via .banner-type-*
+*/
+
+/* Toolbar */
+.gym-toolbar{
+    display:flex;justify-content:space-between;align-items:center;gap:12px;
+    margin:8px 0 16px;padding:12px 14px;
+    border:1px solid rgba(255,255,255,.14);
+    border-radius:16px;
+    background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.015));
+    box-shadow:0 12px 36px rgba(0,0,0,.38), 0 0 0 1px rgba(255,255,255,.04) inset;
+    backdrop-filter:saturate(130%) blur(4px);
+  }
+  .gy-select{
+    background:#0b1433;border:1px solid rgba(255,255,255,.22);color:#e8ecff;border-radius:12px;padding:10px 12px;
+    min-width:200px;outline:none;transition:.18s;
+  }
+  .gy-select:focus{ box-shadow:0 0 0 3px rgba(255,210,63,.18), inset 0 0 0 2px var(--ring,#ffd23f) }
+  
+  .gy-progress{display:flex;align-items:center;gap:10px}
+  .gy-progress-bar{width:190px;height:10px;border-radius:999px;background:#0b1433;border:1px solid rgba(255,255,255,.18);overflow:hidden}
+  .gy-progress-bar span{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--ring,#ffd23f),var(--ok,#31d0aa));transition:width .35s cubic-bezier(.2,.7,.2,1)}
+  .gy-progress-text{font-size:12px;color:#b6c3f8}
+  
+  /* Grid */
+  .gym-grid{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+    gap:18px;
+  }
+  
+  /* --- Banner Card (Glass + Neon Edge) --- */
+  .gym-card{
+    --edgeA: var(--ring,#ffd23f);
+    --edgeB: var(--ok,#31d0aa);
+    position:relative;border-radius:18px;overflow:hidden;isolation:isolate;
+    background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.012));
+    border:1px solid rgba(255,255,255,.12);
+    box-shadow:0 10px 28px rgba(0,0,0,.42);
+    transition:transform .22s cubic-bezier(.2,.7,.2,1), box-shadow .22s, border-color .22s;
+    backdrop-filter:saturate(130%) blur(6px);
+  }
+  .gym-card::before{
+    content:"";position:absolute;inset:-1px;border-radius:20px;z-index:0;pointer-events:none;
+    background:linear-gradient(135deg, var(--edgeA), var(--edgeB));
+    opacity:.18;filter:blur(6px);
+    transition:opacity .22s, filter .22s;
+  }
+  .gym-card:hover{
+    transform:translateY(-8px) scale(1.015);
+    box-shadow:0 26px 70px rgba(0,0,0,.58);
+    border-color:rgba(255,255,255,.22);
+  }
+  .gym-card:hover::before{ opacity:.34; filter:blur(10px) }
+  .gym-card:focus-within{ box-shadow:0 0 0 3px rgba(255,210,63,.28), 0 22px 60px rgba(0,0,0,.52) }
+  .gym-card:focus-visible{ outline:none }
+  
+  /* Banner – kein Hover/Zoom mehr hier */
+  .gym-banner{
+    position:relative;height:210px;background:#0a1231;display:grid;place-items:end;
+    background-size:cover;background-position:center;
+    border-bottom:1px solid rgba(255,255,255,.10);
+    transform:translateZ(0);
+  }
+  /* entfernt: .gym-card:hover .gym-banner { transform: scale(1.08) } */
+  .gym-card.defeated .gym-banner{ filter: grayscale(.05) saturate(1.06) brightness(1.03) }
+  
+  .gym-banner::after{
+    /* dunkler Footer + dezentes Grid */
+    content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+    background:
+      linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.42) 62%, rgba(0,0,0,.82) 100%),
+      radial-gradient(380px 220px at 50% 0%, rgba(255,210,63,.06), transparent 70%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,.06) 0 1px, transparent 1px 22px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,.045) 0 1px, transparent 1px 22px);
+    mix-blend-mode:overlay;
+  }
+  
+  /* Text/Chips im Banner-Footer (bleiben statisch) */
+  .gym-info{
+    position:absolute;left:14px;right:14px;bottom:14px;z-index:1;
+    display:flex;justify-content:space-between;align-items:flex-end;
+  }
+  .gym-title{
+    font-weight:900;letter-spacing:.3px;font-size:17px;
+    text-shadow:0 1px 0 rgba(0,0,0,.45), 0 2px 10px rgba(0,0,0,.25)
+  }
+  .gym-sub{font-size:12px;color:#c0cdff;margin-top:2px;text-shadow:0 1px 0 rgba(0,0,0,.35)}
+  
+  .gym-chip{
+    display:inline-flex;align-items:center;gap:6px;font-weight:900;font-size:12px;
+    padding:7px 11px;border-radius:12px;
+    background:linear-gradient(180deg,#0f1a44,#0a1231);
+    border:1px solid rgba(255,255,255,.22);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.06), 0 8px 20px rgba(0,0,0,.35);
+    text-shadow:0 1px 0 rgba(0,0,0,.35);
+  }
+  .gym-chip::before{content:"Lv";opacity:.75}
+  
+  .gym-ribbon{
+    position:absolute;left:-6px;top:10px;background:var(--pk-yellow,#ffd23f);color:#111;padding:4px 10px;
+    font-size:11px;font-weight:900;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.35);z-index:3;transform:rotate(-2deg)
+  }
+  
+  /* Actions */
+  .gym-actions{
+    display:flex;gap:12px;align-items:center;justify-content:space-between;
+    padding:12px 14px;background:linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,.00));
+    border-top:1px solid rgba(255,255,255,.10);
+  }
+  .gym-actions .btn{
+    padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.22);
+    background:#0e183b;color:#fff;cursor:pointer;font-weight:800;letter-spacing:.2px;transition:.18s;
+    box-shadow:0 8px 22px rgba(0,0,0,.30)
+  }
+  .gym-actions .btn:hover{ transform:translateY(-2px) }
+  .gym-actions .btn.ok{ background:#0f3d33;border-color:#135e4e }
+  .gym-note{ color:#b6c3f8; font-size:12px }
+  
+  /* Defeated State: subtile Aura */
+  .gym-card.defeated{
+    border-color:rgba(255,255,255,.22);
+    box-shadow:0 16px 48px rgba(0,0,0,.54);
+  }
+  .gym-card.defeated::before{
+    opacity:.26; filter:blur(12px);
+  }
+  
+  /* Confetti burst (FX-Kompatibilität) */
+  .gy-burst{position:absolute;inset:0;pointer-events:none;overflow:visible;z-index:6}
+  .gy-burst i{
+    position:absolute;width:8px;height:14px;border-radius:2px;box-shadow:0 2px 6px rgba(0,0,0,.28);
+    transform:translate(-50%,-50%) rotate(0deg)
+  }
+  
+  /* Focus innerhalb der Karte */
+  .gym-card :is(button,.btn):focus-visible{
+    outline:none; box-shadow:0 0 0 3px rgba(255,210,63,.25), inset 0 0 0 2px var(--ring,#ffd23f);
+    border-color:var(--ring,#ffd23f);
+  }
+  
+  /* Typ-Bannerfarben: setze Klasse auf .gym-card, z.B. .banner-type-fire */
+  .gym-card.banner-type-normal { --edgeA:#A8A77A; --edgeB:#7D7A55; }
+  .gym-card.banner-type-fire   { --edgeA:#EE8130; --edgeB:#B34D0B; }
+  .gym-card.banner-type-water  { --edgeA:#6390F0; --edgeB:#2F62CE; }
+  .gym-card.banner-type-electric{--edgeA:#F7D02C; --edgeB:#C7A40A; }
+  .gym-card.banner-type-grass  { --edgeA:#7AC74C; --edgeB:#3F8F26; }
+  .gym-card.banner-type-ice    { --edgeA:#96D9D6; --edgeB:#58A8A6; }
+  .gym-card.banner-type-fighting{--edgeA:#C22E28; --edgeB:#7A1C18; }
+  .gym-card.banner-type-poison { --edgeA:#A33EA1; --edgeB:#6B1E6A; }
+  .gym-card.banner-type-ground { --edgeA:#E2BF65; --edgeB:#9B7D36; }
+  .gym-card.banner-type-flying { --edgeA:#A98FF3; --edgeB:#6B5BC8; }
+  .gym-card.banner-type-psychic{ --edgeA:#F95587; --edgeB:#BC2154; }
+  .gym-card.banner-type-bug    { --edgeA:#A6B91A; --edgeB:#6C7B12; }
+  .gym-card.banner-type-rock   { --edgeA:#B6A136; --edgeB:#7A6524; }
+  .gym-card.banner-type-ghost  { --edgeA:#735797; --edgeB:#4B3A66; }
+  .gym-card.banner-type-dragon { --edgeA:#6F35FC; --edgeB:#4B23B2; }
+  .gym-card.banner-type-dark   { --edgeA:#705746; --edgeB:#3E2E23; }
+  .gym-card.banner-type-steel  { --edgeA:#B7B7CE; --edgeB:#7F8199; }
+  .gym-card.banner-type-fairy  { --edgeA:#D685AD; --edgeB:#9E4479; }
+  
+  /* Banner nutzt dieselben Farben automatisch */
+  .gym-card[class*="banner-type-"] .gym-banner{
+    background: linear-gradient(135deg, var(--edgeA), var(--edgeB));
+  }
+  
+  /* Responsive */
+  @media (max-width:900px){
+    .gym-grid{ grid-template-columns:repeat(auto-fill,minmax(260px,1fr)) }
+    .gym-banner{ height:190px }
+  }
+  

@@ -11,6 +11,27 @@
   <link rel="stylesheet" type="text/css" href="moves.css">
   <link rel="stylesheet" type="text/css" href="lobby.css">
   <link rel="stylesheet" type="text/css" href="game.css">
+  <link rel="stylesheet" type="text/css" href="login_plus.css">
+  <link rel="stylesheet" type="text/css" href="arena.css">
+  <link rel="stylesheet" type="text/css" href="roles.css">
+  <link rel="stylesheet" href="loader.css">
+  <script src="loader.js"></script>
+<script>
+  // Anzeigen
+  PokeLoader.show('Verbinde zur Lobby…');
+
+  // Text später updaten
+  setTimeout(() => PokeLoader.setText('Hole Team-Daten…'), 2000);
+  setTimeout(() => PokeLoader.setHint('Das kann einen Moment dauern.'), 4000);
+  // Optionaler Untertext (kleiner Hinweis)
+  //PokeLoader.setHint('Das kann einen Moment dauern.');
+
+  // Fertig
+  setTimeout(() =>  PokeLoader.hide(), 6000);
+  
+  //PokeLoader.hide();
+</script>
+
   <style>
     :root{
       --pk-red:#EE1515; --pk-blue:#2554C7; --pk-yellow:#FFCC00; --pk-dark:#1f1f1f; --pk-bg:#0b1020;
@@ -29,120 +50,449 @@
       background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.00));
       position:sticky; top:0; z-index:10;
     }
-    .brand{ display:flex; align-items:center; gap:14px; letter-spacing:.5px; }
-    .logo{ width:44px; height:44px; border-radius:50%; background:
-      radial-gradient(circle at 50% 35%, var(--pk-red) 0 34%, #fff 35% 65%, #111 66% 100%);
-      box-shadow:0 0 0 3px #fff inset, 0 0 0 6px var(--pk-red) inset, 0 6px 22px rgba(0,0,0,.35);
-      position:relative;
-    }
-    .logo::after{content:""; position:absolute; inset:auto 0 14px 0; height:6px; background:#fff}
-    .title{ font-family:"Press Start 2P", monospace; font-size:14px; line-height:1.1; text-shadow:0 2px 0 #000; }
-    .title small{display:block; color:var(--muted); font-family:Inter; font-weight:600; margin-top:4px}
+/* ==============================================
+   Nuzlocke – COMPLETE + EPIC UPGRADE STYLES
+   ============================================== */
 
-    nav.tabs{ display:flex; gap:8px; flex-wrap:wrap }
-    .tab-btn{
-      border:1px solid rgba(255,255,255,.12); background:#0e1633; color:#dfe6ff;
-      padding:10px 14px; border-radius:12px; cursor:pointer; font-weight:700; letter-spacing:.2px;
-      box-shadow:0 4px 14px rgba(0,0,0,.25), inset 0 0 0 0px var(--ring);
-      transition:.2s;
-    }
-    .tab-btn.active{ box-shadow:0 0 0 2px var(--ring) inset, 0 8px 28px rgba(255,210,63,.08) }
-    .tab-btn:hover{ transform:translateY(-1px); background:#0f1a40 }
+   :root{
+  --pk-red:#EE1515; --pk-blue:#2554C7; --pk-yellow:#FFCC00; --pk-dark:#1f1f1f; --pk-bg:#0b1020;
+  --card:#111829; --muted:#93a2c7; --ring:#ffd23f; --ok:#31d0aa; --bad:#ff6b6b;
+}
 
-    main{ max-width:1200px; margin:18px auto 64px; padding:0 18px }
-    .panel{
-      display:none; border:1px solid rgba(255,255,255,.12); border-radius:18px; padding:18px; background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.00));
-      box-shadow:0 18px 60px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04) inset;
-    }
-    .panel.active{ display:block }
+*{ box-sizing:border-box }
+html,body{ height:100% }
+body{
+  margin:0; color:#e8ecff;
+  background: radial-gradient(1200px 600px at 10% 10%, #17224a 0, #0e1530 40%, #0b1020 100%);
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+  overflow-x:hidden;
+}
 
-    .grid{ display:grid; gap:14px }
-    .grid.r2c3{ grid-template-columns: 260px 1fr }
+/* ---------- Header / Brand ---------- */
+header{
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  padding:16px 18px; border-bottom:1px solid rgba(255,255,255,.08);
+  background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.00));
+  position:sticky; top:0; z-index:10;
+}
+.brand{ display:flex; align-items:center; gap:14px; letter-spacing:.5px; }
+.logo{
+  width:44px; height:44px; border-radius:50%; position:relative;
+  background: radial-gradient(circle at 50% 35%, var(--pk-red) 0 34%, #fff 35% 65%, #111 66% 100%);
+  box-shadow:0 0 0 3px #fff inset, 0 0 0 6px var(--pk-red) inset, 0 6px 22px rgba(0,0,0,.35);
+  animation: pkPulse 4.2s ease-in-out infinite;
+}
+.logo::after{ content:""; position:absolute; inset:auto 0 14px 0; height:6px; background:#fff }
+@keyframes pkPulse{ 0%{transform:scale(1)} 50%{transform:scale(1.04)} 100%{transform:scale(1)} }
 
-    .card{ background:#0c1330; border:1px solid rgba(255,255,255,.1); border-radius:16px; padding:14px; box-shadow:0 8px 26px rgba(0,0,0,.35); }
-    .card h3{ margin:.2rem 0 .8rem; font-size:14px; letter-spacing:.4px }
+.title{ font-family:"Press Start 2P", monospace; font-size:14px; line-height:1.1; text-shadow:0 2px 0 #000; }
+.title small{ display:block; color:var(--muted); font-family:Inter; font-weight:600; margin-top:4px }
 
-    .routes-list{ max-height:520px; overflow:auto; padding-right:6px }
-    .route-item{ display:flex; justify-content:space-between; align-items:center; padding:10px 12px; margin:8px 0; border:1px solid rgba(255,255,255,.08); border-radius:12px; cursor:pointer; background:#0a1330 }
-    .route-item:hover{ background:#0c173b }
-    .route-item.active{ outline:2px solid var(--ring) }
-    .badge{ padding:2px 8px; border-radius:999px; font-size:12px; font-weight:800 }
-    .badge.pending{ background:#19203f; color:#c7d2ff }
-    .badge.caught{ background:#0a3a31; color:#8af0c9 }
-    .badge.failed{ background:#3a1010; color:#ff9b9b }
+/* ---------- Tabs ---------- */
+nav.tabs{ display:flex; gap:8px; flex-wrap:wrap; position:relative }
+.tab-btn{
+  border:1px solid rgba(255,255,255,.12); background:#0e1633; color:#dfe6ff;
+  padding:10px 14px; border-radius:12px; cursor:pointer; font-weight:700; letter-spacing:.2px;
+  box-shadow:0 4px 14px rgba(0,0,0,.25), inset 0 0 0 0px var(--ring);
+  transition:.2s; position:relative; overflow:hidden; backdrop-filter:saturate(110%);
+}
+.tab-btn.active{ box-shadow:0 0 0 2px var(--ring) inset, 0 8px 28px rgba(255,210,63,.08) }
+.tab-btn:hover{ transform:translateY(-1px); background:#0f1a40 }
+.tab-btn::before{
+  content:""; position:absolute; inset:-120% -200%; pointer-events:none;
+  background:linear-gradient(75deg, transparent 40%, rgba(255,255,255,.18) 50%, transparent 60%);
+  transform: translateX(-60%) rotate(10deg); opacity:0;
+  transition: transform .9s ease, opacity .25s ease;
+}
+.tab-btn:hover::before{ transform: translateX(60%) rotate(10deg); opacity:.65 }
+.tab-btn::after{
+  content:""; position:absolute; left:12px; right:12px; bottom:6px; height:2px;
+  background:linear-gradient(90deg, transparent, var(--ring), transparent);
+  transform:scaleX(0); transform-origin:center; transition:.18s; opacity:.0;
+}
+.tab-btn.active::after{ transform:scaleX(1); opacity:.9 }
 
-    .encounter{ display:grid; grid-template-columns: 1.2fr 1fr; gap:14px }
-    .encounter .preview{ display:flex; gap:18px; align-items:center }
-    .sprite{ width:88px; height:88px; border-radius:12px; background:#0b122f; border:1px solid rgba(255,255,255,.12); display:grid; place-items:center }
-    .sprite img{ max-width:90%; max-height:90%; image-rendering: pixelated }
+/* ---------- Main / Panels ---------- */
+main{ max-width:1200px; margin:18px auto 64px; padding:0 18px }
+.panel{
+  display:none; border:1px solid rgba(255,255,255,.12); border-radius:18px; padding:18px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0)),
+    radial-gradient(800px 400px at 10% -10%, rgba(255,210,63,.06), transparent 60%);
+  box-shadow:0 18px 60px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04) inset;
+  border-image: conic-gradient(from 180deg at 50% 50%, rgba(255,210,63,.18), rgba(255,255,255,.05), rgba(37,84,199,.18)) 1;
+}
+.panel.active{ display:block }
 
-    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap }
-    input[type=text], input[type=search], select{
-      background:#0b1433; border:1px solid rgba(255,255,255,.18); border-radius:12px; color:#e8ecff;
-      padding:10px 12px; min-width:180px; outline:none; box-shadow:inset 0 0 0 0 var(--ring); transition:.2s;
-    }
-    input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inset 0 0 0 2px var(--ring) }
+/* ---------- Layout ---------- */
+.grid{ display:grid; gap:14px }
+.grid.r2c3{ grid-template-columns: 260px 1fr }
 
-    .btn{ border:1px solid rgba(255,255,255,.22); background:#0e183b; color:#fff; padding:10px 14px; border-radius:12px; cursor:pointer; font-weight:800; letter-spacing:.2px; transition:.18s; }
-    .btn:hover{ transform:translateY(-1px) }
-    .btn.ok{ background:#0f3d33; border-color:#135e4e }
-    .btn.bad{ background:#3a1414; border-color:#6a2222 }
-    .btn.warn{ background:#3a320f; border-color:#6a5922 }
+/* ---------- Cards ---------- */
+.card{
+  background:#0c1330; border:1px solid rgba(255,255,255,.1); border-radius:16px; padding:14px;
+  box-shadow:0 8px 26px rgba(0,0,0,.35);
+}
+.card h3{ margin:.2rem 0 .8rem; font-size:14px; letter-spacing:.4px }
 
-    /* Box & Team */
-    .box-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap:14px }
-    .poke-card{ position:relative; border:1px solid rgba(255,255,255,.12); border-radius:16px; background:linear-gradient(180deg,#0d1a3f,#0b1430); padding:10px; display:grid; gap:8px; cursor:grab }
-    .poke-card.dragging{ opacity:.6 }
-    .poke-top{ display:flex; justify-content:space-between; align-items:center }
-    .poke-name{ font-weight:800; letter-spacing:.2px }
-    .tag{ font-size:11px; color:#b6c3f8 }
-    .poke-sprite{ width:100%; aspect-ratio:1/1; display:grid; place-items:center; background:#0a1231; border:1px dashed rgba(255,255,255,.12); border-radius:12px }
-    .poke-sprite img{ max-width:80%; max-height:80%; image-rendering: pixelated }
-    .ribbon{ position:absolute; top:8px; left:-6px; background:var(--pk-yellow); color:#111; padding:3px 10px; border-radius:6px; font-size:11px; font-weight:900; box-shadow:0 2px 10px rgba(0,0,0,.3) }
+/* ======================================
+   ROUTES – modern & animated
+   ====================================== */
+.routes-list{ max-height:520px; overflow:auto; padding-right:8px }
+.route-item{
+  display:flex; justify-content:space-between; align-items:center; gap:10px;
+  padding:10px 12px; margin:8px 0; border:1px solid rgba(255,255,255,.14); border-radius:12px;
+  background:
+    linear-gradient(180deg,#0b1333 0%, #0a1230 100%),
+    radial-gradient(420px 160px at 0% -20%, rgba(255,210,63,.06), transparent 60%);
+  cursor:pointer; transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+  position:relative; isolation:isolate; box-shadow:0 8px 22px rgba(0,0,0,.35);
+}
+.route-item:hover{
+  transform:translateY(-2px);
+  box-shadow:0 12px 36px rgba(0,0,0,.44), 0 0 0 1px rgba(255,255,255,.04) inset;
+  background:
+    linear-gradient(180deg,#0c173b 0%, #0a1233 100%),
+    radial-gradient(420px 160px at 0% -20%, rgba(255,210,63,.08), transparent 60%);
+}
+.route-item.active{ box-shadow:0 0 0 2px var(--ring) inset, 0 12px 34px rgba(255,210,63,.10) }
+.route-item::after{
+  content:""; position:absolute; inset:-30% -60%; border-radius:18px; pointer-events:none;
+  background: linear-gradient(75deg, transparent 40%, rgba(255,255,255,.16) 50%, transparent 60%);
+  transform: translateX(-60%) rotate(10deg); opacity:0;
+  transition: transform .9s ease, opacity .25s ease;
+}
+.route-item:hover::after{ transform: translateX(60%) rotate(10deg); opacity:.7 }
+.route-item .rname{ font-weight:900; letter-spacing:.2px }
+.route-item .chev{ opacity:.45 }
 
-    .team-wrap{ display:grid; grid-template-columns: repeat(6, 1fr); gap:12px }
-    .slot{ border:2px dashed rgba(255,255,255,.2); border-radius:16px; min-height:160px; display:grid; place-items:center; padding:10px; background:rgba(255,255,255,.02) }
-    .slot.over{ outline:3px solid var(--ring) }
-    .slot .slot-inner{ text-align:center; color:#90a2ea }
-    .slot .slot-inner img{ width:72px; height:72px }
-    .slot .meta{ font-size:12px; color:#b0baf0 }
-    .slot .actions{ margin-top:6px }
+.badge{ padding:2px 8px; border-radius:999px; font-size:12px; font-weight:900; border:1px solid rgba(255,255,255,.18) }
+.badge.pending{ background:#19203f; color:#c7d2ff }
+.badge.caught{ background:#0a3a31; color:#8af0c9 }
+.badge.failed{ background:#3a1010; color:#ff9b9b }
 
-    .links-table{ width:100%; border-collapse:separate; border-spacing:0 8px }
-    .links-table th, .links-table td{ text-align:left; padding:10px 12px }
-    .links-table tr{ background:#0b1433; border:1px solid rgba(255,255,255,.12) }
-    .links-table tr td:first-child, .links-table tr th:first-child{ border-top-left-radius:12px; border-bottom-left-radius:12px }
-    .links-table tr td:last-child, .links-table tr th:last-child{ border-top-right-radius:12px; border-bottom-right-radius:12px }
+@keyframes routePop{ 0%{ transform:scale(.98) } 30%{ transform:scale(1.04) } 60%{ transform:scale(.99) } 100%{ transform:scale(1) } }
+.route-item.caught-pop{ animation: routePop .6s ease }
 
-    .login-overlay{
-      position:fixed; inset:0; background:radial-gradient(800px 400px at 20% 0%, rgba(255,89,95,.25), rgba(0,0,0,.65) 40%, rgba(0,0,0,.9) 100%);
-      display:grid; place-items:center; z-index:99;
-    }
-    .login-card{ width:min(560px, 92vw); background:#0b1433; border:1px solid rgba(255,255,255,.15); border-radius:18px; padding:20px; text-align:center; box-shadow:0 24px 80px rgba(0,0,0,.45) }
-    .login-card h1{ font-family:"Press Start 2P"; font-size:20px; margin:10px 0 18px }
-    .row.center{ justify-content:center }
-    .helper{ color:#9fb1ff; font-size:12px }
-    .pill{ display:inline-flex; align-items:center; gap:10px; border:1px solid rgba(255,255,255,.12); background:#0d153a; padding:10px 12px; border-radius:12px }
-    .pill b{ color:#fff }
-    .footer{ margin-top:14px; color:#91a3ea; font-size:12px }
-    .footer a{ color:#fff }
+/* ======================================
+   ENCOUNTER / SPRITES – epische Bühne
+   ====================================== */
+.encounter{ display:grid; grid-template-columns: 1.2fr 1fr; gap:14px }
+.encounter .preview{
+  display:grid; grid-template-columns: minmax(280px, 360px) 1fr; gap:22px; align-items:center;
+}
+@media (max-width:900px){ .encounter .preview{ grid-template-columns:1fr } }
 
-    @media (max-width:900px){
-      .grid.r2c3{ grid-template-columns: 1fr }
-      .encounter{ grid-template-columns:1fr }
-      .team-wrap{ grid-template-columns: repeat(3, 1fr) }
-    }
-    .login-overlay[hidden]{ display:none !important }
-    .status-note{ color:var(--muted); font-weight:800 }
-    .drawer{ margin-top:12px }
-    .poke-card.selected{ outline:2px solid var(--ring) }
-    .pick-hint{ font-size:12px; color:var(--pk-yellow) }
+.sprite, #encSprite{
+  position:relative; width:240px; height:240px; border-radius:16px; overflow:hidden;
+  border:1px dashed rgba(255,255,255,.14);
+  background:
+    radial-gradient(380px 220px at 50% 0%, rgba(255,210,63,.08), transparent 70%),
+    radial-gradient(120px 80px at 50% 86%, rgba(255,255,255,.10), transparent 60%),
+    #0a1231;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.04),
+    0 18px 54px rgba(0,0,0,.55),
+    0 0 0 2px rgba(255,255,255,.04);
+  place-self:center; isolation:isolate;
+}
+.sprite img, #encSprite img{ max-width:92%; max-height:92%; image-rendering: pixelated }
+@media (max-width:900px){ .sprite, #encSprite{ width:200px; height:200px } }
 
-    .players{ display:grid; gap:10px }
-    .player{ display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border:1px solid rgba(255,255,255,.12); border-radius:12px; background:#0b1433 }
-    .player .name{ font-weight:800 }
-    .player .meta{ color:#9fb1ff; font-size:12px }
+/* idle drift */
+@keyframes idleFloat{ 0%{transform:translateY(0)} 50%{transform:translateY(-5px)} 100%{transform:translateY(0)} }
+.sprite img, .poke-sprite img, #encSprite img{ animation: idleFloat 5.2s ease-in-out infinite; will-change:transform }
 
+/* Catch Pulse / Fail Flash (CSS-Varianten für schnelle Hooks) */
+.caught-anim{ position:relative }
+.caught-anim::before{
+  content:""; position:absolute; inset:50% auto auto 50%;
+  width:10px; height:10px; border-radius:50%; transform:translate(-50%, -50%);
+  box-shadow:0 0 0 0 rgba(255,210,63,.9); animation: catchPulse .6s ease-out;
+}
+@keyframes catchPulse{ 0%{box-shadow:0 0 0 0 rgba(255,210,63,.9)} 100%{box-shadow:0 0 0 36px rgba(255,210,63,0)} }
+.caught-anim img{ animation: catchBounce .6s ease-out }
+@keyframes catchBounce{ 0%{transform:scale(.95)} 35%{transform:scale(1.05)} 60%{transform:scale(.98)} 100%{transform:scale(1)} }
+
+.fail-anim{ position:relative }
+.fail-anim img{ animation: shakeX .45s cubic-bezier(.36,.07,.19,.97) both }
+@keyframes shakeX{
+  10%,90%{transform:translateX(-1px)} 20%,80%{transform:translateX(2px)}
+  30%,50%,70%{transform:translateX(-4px)} 40%,60%{transform:translateX(4px)}
+}
+.fail-anim::after{ content:""; position:absolute; inset:0; border-radius:12px; background:rgba(255,0,0,.10); animation: failFlash .45s ease-out; pointer-events:none }
+@keyframes failFlash{ from{opacity:.6} to{opacity:0} }
+
+/* ======================================
+   FORM / BUTTONS
+   ====================================== */
+.row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap }
+input[type=text], input[type=search], select{
+  background:#0b1433; border:1px solid rgba(255,255,255,.18); border-radius:12px; color:#e8ecff;
+  padding:10px 12px; min-width:180px; outline:none; box-shadow:inset 0 0 0 0 var(--ring); transition:.2s;
+}
+input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inset 0 0 0 2px var(--ring), 0 0 0 3px rgba(255,210,63,.08) }
+
+.btn{
+  border:1px solid rgba(255,255,255,.22); background:#0e183b; color:#fff; padding:10px 14px;
+  border-radius:12px; cursor:pointer; font-weight:800; letter-spacing:.2px; transition:.18s;
+  position:relative; overflow:hidden; box-shadow:0 6px 20px rgba(0,0,0,.28);
+}
+.btn:hover{ transform:translateY(-1px) }
+.btn.ok{ background:#0f3d33; border-color:#135e4e }
+.btn.bad{ background:#3a1414; border-color:#6a2222 }
+.btn.warn{ background:#3a320f; border-color:#6a5922 }
+.btn::after{
+  content:""; position:absolute; inset:-160% -200%; pointer-events:none;
+  background:linear-gradient(75deg, transparent 45%, rgba(255,255,255,.20) 50%, transparent 55%);
+  transform: translateX(-60%) rotate(10deg); opacity:0; transition: transform .8s ease, opacity .25s ease;
+}
+.btn:hover::after{ transform: translateX(60%) rotate(10deg); opacity:.9 }
+
+/* ======================================
+   BOX & TEAM
+   ====================================== */
+.box-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap:14px }
+.poke-card{
+  position:relative; border:1px solid rgba(255,255,255,.12); border-radius:16px;
+  background:linear-gradient(180deg,#0d1a3f,#0b1430); padding:10px; display:grid; gap:8px; cursor:grab;
+  box-shadow:0 8px 26px rgba(0,0,0,.35); transition: transform .18s ease, box-shadow .18s ease;
+}
+.poke-card:hover{ transform:translateY(-2px); box-shadow:0 14px 40px rgba(0,0,0,.48) }
+.poke-card.dragging{ opacity:.6 }
+.poke-card::after{
+  content:""; position:absolute; inset:-40% -80%; pointer-events:none; border-radius:20px;
+  background: linear-gradient(75deg, transparent 40%, rgba(255,255,255,.18) 50%, transparent 60%);
+  transform: translateX(-60%) rotate(10deg); opacity:0; transition: transform .9s ease, opacity .25s ease;
+}
+.poke-card:hover::after{ transform: translateX(60%) rotate(10deg); opacity:.65 }
+
+.poke-top{ display:flex; justify-content:space-between; align-items:center }
+.poke-name{ font-weight:800; letter-spacing:.2px }
+.tag{ font-size:11px; color:#b6c3f8 }
+
+.poke-sprite{
+  width:100%; aspect-ratio:1/1; display:grid; place-items:center;
+  background:#0a1231; border:1px dashed rgba(255,255,255,.12); border-radius:12px;
+  min-height:190px; position:relative; overflow:hidden;
+  background: radial-gradient(280px 160px at 50% 0%, rgba(255,255,255,.06), transparent 70%), #0a1231;
+}
+.poke-sprite img{ max-width:88%; max-height:88%; image-rendering: pixelated }
+
+.ribbon{
+  position:absolute; top:8px; left:-6px; background:var(--pk-yellow); color:#111; padding:3px 10px;
+  border-radius:6px; font-size:11px; font-weight:900; box-shadow:0 2px 10px rgba(0,0,0,.3)
+}
+
+/* Team */
+.team-wrap{ display:grid; grid-template-columns: repeat(6, 1fr); gap:12px }
+.slot{
+  border:2px dashed rgba(255,255,255,.2); border-radius:16px; min-height:160px;
+  display:grid; place-items:center; padding:10px; background:rgba(255,255,255,.02)
+}
+.slot.over{ outline:3px solid var(--ring) }
+.slot .slot-inner{ text-align:center; color:#90a2ea }
+.slot .slot-inner img{ width:72px; height:72px }
+.slot .meta{ font-size:12px; color:#b0baf0 }
+.slot .actions{ margin-top:6px }
+
+/* ======================================
+   TABLES / MISC
+   ====================================== */
+.links-table{ width:100%; border-collapse:separate; border-spacing:0 8px }
+.links-table th, .links-table td{ text-align:left; padding:10px 12px }
+.links-table tr{ background:#0b1433; border:1px solid rgba(255,255,255,.12) }
+.links-table tr td:first-child, .links-table tr th:first-child{ border-top-left-radius:12px; border-bottom-left-radius:12px }
+.links-table tr td:last-child, .links-table tr th:last-child{ border-top-right-radius:12px; border-bottom-right-radius:12px }
+
+/* ======================================
+   LOGIN – Hero-Banner + Glas-Karte
+   ====================================== */
+.login-overlay{
+  position:fixed; inset:0;
+  background:
+    radial-gradient(900px 480px at 20% -10%, rgba(255,210,63,.12), rgba(0,0,0,.65) 40%, rgba(0,0,0,.88) 100%),
+    radial-gradient(1200px 800px at 120% 120%, rgba(37,84,199,.22), transparent 60%),
+    #050914;
+  display:grid; place-items:center; z-index:99;
+}
+.login-overlay[hidden]{ display:none !important }
+
+.login-card{
+  width:min(560px, 92vw); position:relative; overflow:hidden;
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+  border:1px solid rgba(255,255,255,.15); border-radius:18px; padding:20px; text-align:center;
+  box-shadow:0 24px 80px rgba(0,0,0,.45);
+  padding-top:220px; /* Platz für Banner */
+  backdrop-filter: blur(6px) saturate(120%);
+  box-shadow: 0 28px 90px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.06) inset;
+}
+.login-card::before{
+  content:""; position:absolute; left:0; right:0; top:0; height:200px;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.0), rgba(0,0,0,.35) 70%, rgba(0,0,0,.6)),
+    url("https://68.media.tumblr.com/tumblr_m69a3oRRu11qc254uo1_500.gif") center / cover no-repeat;
+  border-top-left-radius:18px; border-top-right-radius:18px;
+  filter:saturate(115%) contrast(105%);
+}
+.login-card::after{
+  content:""; position:absolute; left:8px; right:8px; top:180px; height:60px; border-radius:18px;
+  pointer-events:none; background: radial-gradient(140px 40px at 50% 0%, rgba(255,255,255,.22), rgba(255,255,255,0));
+  opacity:.25;
+}
+.login-card h1{ font-family:"Press Start 2P"; font-size:20px; margin:10px 0 18px; letter-spacing:.5px; text-shadow:0 2px 0 #000 }
+.row.center{ justify-content:center }
+.helper{ color:#9fb1ff; font-size:12px }
+.pill{ display:inline-flex; align-items:center; gap:10px; border:1px solid rgba(255,255,255,.12); background:#0d153a; padding:10px 12px; border-radius:12px }
+.pill b{ color:#fff }
+.footer{ margin-top:14px; color:#91a3ea; font-size:12px }
+.footer a{ color:#fff }
+
+/* ======================================
+   Lobby Players
+   ====================================== */
+.players{ display:grid; gap:10px }
+.player{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 12px; border:1px solid rgba(255,255,255,.12); border-radius:12px; background:#0b1433
+}
+.player .name{ font-weight:800 }
+.player .meta{ color:#9fb1ff; font-size:12px }
+
+/* ======================================
+   Utilities / Misc
+   ====================================== */
+.status-note{ color:var(--muted); font-weight:800 }
+.drawer{ margin-top:12px }
+.poke-card.selected{ outline:2px solid var(--ring) }
+.pick-hint{ font-size:12px; color:var(--pk-yellow) }
+
+/* responsive grids */
+@media (max-width:900px){
+  .grid.r2c3{ grid-template-columns: 1fr }
+  .encounter{ grid-template-columns:1fr }
+  .team-wrap{ grid-template-columns: repeat(3, 1fr) }
+}
+
+/* ======================================
+   Type Aura + RouteFX Effect Helpers
+   ====================================== */
+[type-aura]{ position:relative; isolation:isolate }
+[type-aura]::before{
+  content:""; position:absolute; inset:-8px; border-radius:14px; z-index:0; filter:blur(12px);
+  background: conic-gradient(from 0deg, var(--aura1, #6cf), var(--aura2, #39f), var(--aura1, #6cf));
+  opacity:.18; transition:.2s;
+}
+[type-aura] > *{ position:relative; z-index:1 }
+
+/* Vignette/Screen-Bloom für Epic Catch */
+.rf-vignette{
+  position:fixed; inset:0; z-index:9990; pointer-events:none;
+  background: radial-gradient(1200px 700px at 50% 30%, rgba(255,255,255,.08), rgba(0,0,0,.75) 60%, rgba(0,0,0,.92));
+  opacity:0;
+}
+.rf-bloom{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  width:18px; height:18px; border-radius:999px; pointer-events:none;
+  box-shadow:0 0 0 0 rgba(255,210,63,.95);
+}
+
+/* Wurfball (für RouteFX) */
+.routefx-ball{
+  position:absolute; width:34px; height:34px; border-radius:50%;
+  background: radial-gradient(circle at 50% 35%, #EE1515 0 36%, #fff 37% 64%, #111 65% 100%);
+  box-shadow: 0 0 0 2px #fff inset, 0 0 0 4px #EE1515 inset, 0 10px 26px rgba(0,0,0,.45);
+  pointer-events:none; z-index:5;
+}
+.routefx-ball::after{ content:""; position:absolute; left:0; right:0; bottom:10px; height:6px; background:#fff }
+
+/* Konfetti */
+.routefx-confetti{ position:absolute; inset:0; pointer-events:none; overflow:visible; z-index:6 }
+.routefx-confetti i{
+  position:absolute; width:8px; height:14px; border-radius:2px;
+  transform: translate(-50%,-50%) rotate(0deg);
+  box-shadow:0 2px 6px rgba(0,0,0,.28);
+}
+
+/* Kameraerschütterung (optional nutzbar) */
+@keyframes camShake {
+  0%{ transform:translate(0,0) }
+  20%{ transform:translate(-2px, 2px) }
+  40%{ transform:translate(2px, -1px) }
+  60%{ transform:translate(-1px, -2px) }
+  80%{ transform:translate(2px, 1px) }
+  100%{ transform:translate(0,0) }
+}
+
+/* Reduced Motion – respektieren */
+@media (prefers-reduced-motion: reduce){
+  .logo, .tab-btn::before, .poke-card::after, .route-item::after, .btn::after{ animation:none; transition:none }
+  [type-aura]::before{ opacity:.10; filter:none }
+}
+
+/* ===== Login FX – Addon ===== */
+
+/* Einstieg: Karte fade+lift in */
+.login-card{ opacity:0; transform:translateY(14px) scale(.98); filter:blur(6px); }
+.login-card.is-in{ opacity:1; transform:none; filter:none; transition:opacity .40s ease, transform .40s ease, filter .40s ease; }
+
+/* Parallax auf dem Hero-GIF (::before aus deiner CSS) */
+.login-card::before{ transform:translate3d(var(--px,0), var(--py,0), 0) scale(1.05); transition:transform .18s ease; }
+
+/* Button: Pokéball-Loader & Start-Flash */
+#startBtn{ position:relative; overflow:hidden }
+#startBtn.loading{ pointer-events:none; opacity:.9 }
+#startBtn.loading::before{
+  content:""; position:absolute; left:12px; top:50%; width:16px; height:16px; transform:translateY(-50%);
+  border-radius:50%;
+  background: radial-gradient(circle at 50% 35%, #EE1515 0 36%, #fff 37% 64%, #111 65% 100%);
+  box-shadow: 0 0 0 2px #fff inset, 0 0 0 4px #EE1515 inset;
+  animation: ballSpin .8s linear infinite;
+}
+@keyframes ballSpin{ to{ transform:translateY(-50%) rotate(360deg) } }
+
+.login-card.starting::after{
+  content:""; position:fixed; inset:0; z-index:100; pointer-events:none;
+  background: radial-gradient(600px 280px at 50% 40%, rgba(255,210,63,.20), rgba(0,0,0,.72) 60%, rgba(0,0,0,.86));
+  animation: startFlash .5s ease forwards;
+}
+@keyframes startFlash{ from{opacity:0} 50%{opacity:1} to{opacity:0} }
+
+/* Countdown-Badge */
+.count-bubble{
+  position:absolute; right:12px; top:12px; z-index:3;
+  background: #0e183b; border:1px solid rgba(255,255,255,.22); color:#fff;
+  padding:6px 10px; border-radius:999px; font-weight:900; font-size:12px;
+  box-shadow:0 8px 22px rgba(0,0,0,.35);
+  transform:translateY(-6px); opacity:0;
+}
+.count-bubble.show{ opacity:1; transform:translateY(0); transition:.2s ease }
+
+/* Ticker oben rechts → links */
+.login-ticker{
+  position:fixed; top:8px; left:0; right:0; z-index:120;
+  display:flex; justify-content:flex-end; pointer-events:none;
+}
+.login-ticker .track{
+  min-width:120%; white-space:nowrap; font-weight:800; letter-spacing:.3px;
+  padding:6px 12px; border-radius:10px;
+  background:linear-gradient(180deg,#111a3b,#0b1433);
+  border:1px solid rgba(255,255,255,.14); color:#ffeb9a;
+  box-shadow:0 8px 22px rgba(0,0,0,.35);
+  animation: tickerMove 18s linear infinite;
+}
+@keyframes tickerMove{ from{ transform:translateX(10%) } to{ transform:translateX(-110%) } }
+
+/* Stardust Canvas ebene */
+#login-stars{
+  position:fixed; inset:0; z-index:60; pointer-events:none; opacity:.45;
+  mix-blend-mode:screen;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce){
+  .login-card, .login-card.is-in, .login-card::before, .login-ticker .track{ transition:none; animation:none }
+}
 
 
 
@@ -160,7 +510,7 @@
       <button class="tab-btn" data-tab="team">team</button>
       <button class="tab-btn" data-tab="allteams">all Teams</button>
       <button class="tab-btn" data-tab="moves">Moves</button>
-      
+      <button class="tab-btn" data-tab="gyms">Arenen</button>
       <button class="tab-btn" data-tab="lobby">Lobby</button>
       <button class="tab-btn" data-tab="games">Spiel</button>
 
@@ -239,7 +589,12 @@
       </p>
 
       <div class="card drawer">
-        <h3>Box (Schnellzugriff)</h3>
+        
+        <h3>Box (Schnellzugriff)  <span class="poke-ball" aria-hidden="true"></span>
+          <input id="boxSearch" style="margin-left: 30px;" type="search" placeholder="Name,Route" autocomplete="off">
+         
+     
+        
         
         <div class="box-grid" id="boxDrawer"></div>
       </div>
@@ -313,11 +668,11 @@
     <!-- LOBBY -->
     <section class="panel" id="panel-lobby">
       <div id="nz-lobby"></div>
-      <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:10px">
+      <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:10px; display:none">
         <h3 style="margin:0">Lobby</h3>
         <span class="pill">Spieler: <b id="playerNameBadge">–</b></span>
       </div>
-      <div class="players" id="playersList"></div>
+      <div style="display:none"class="players" id="playersList"></div>
     </section>
   </main>
 
@@ -333,6 +688,27 @@
       <p class="footer">Multiplayer ist aktiv – Lobby-Tab nutzen. 🎮</p>
     </div>
   </div>
+  <!-- Arena-->
+  <section class="panel" id="panel-gyms">
+    <div class="gym-toolbar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div class="title">Arenen<small>Badges & Levelcaps</small></div>
+      </div>
+      <div class="row">
+        <select id="gyGameSel" class="gy-select">
+          <option value="kanto">Kanto (Gen 1/FRLG)</option>
+          <!-- Platz für weitere Games -->
+        </select>
+        <div class="gy-progress" title="Fortschritt">
+          <div class="gy-progress-bar"><span id="gyProgFill"></span></div>
+          <span class="gy-progress-text"><b id="gyProgNum">0</b>/8 Badges</span>
+        </div>
+      </div>
+    </div>
+    <div class="gym-grid" id="gymGrid"></div>
+  </section>
+  
   <!-- GAME PICKER OVERLAY -->
   <section class="panel" id="panel-games">
     <div class="card">
@@ -370,11 +746,21 @@
   
   <script type="module" src="./moves_load.js"></script>
   <script type="module" src="./moves.js"></script>
-
-  
+  <script src="login_plus.js"></script>
+  <script src="arena.js"></script>
   <script type="module" src="./nuz.js"></script>
   <script type="module" src="./filter.js"></script>
  
   <script type="module" src="./game.js"></script>
+  <script src="./pokeBanner.js"></script>
+
+  <script src="login.js"></script>
+ 
+  <script src="control-api2.js"></script>
+  <script src="hotkeys.js"></script>
+  
+ 
+<script>document.addEventListener('DOMContentLoaded', ()=> LoginFX.init());</script>
+
 </body>
 </html>

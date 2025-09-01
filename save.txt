@@ -14,7 +14,6 @@ let renderLock = false;
 /* Race-Guard: während wir aktiv zum Server schreiben, nicht sofort vom Server zurückspiegeln */
 let nzLocalHoldUntil = 0;
 function holdSync(ms = 1500){ nzLocalHoldUntil = Date.now() + ms; }
-let newLobyCode = '';
 
 /* ---------- POKEDEX ANFANG (ohne nzApi, mit Types) ---------- */
 const POKEDEX_KEY = 'nuz_pokedex_v2'; // gleiches Key wie vorher, wir erkennen alte Caches ohne "types"
@@ -665,7 +664,7 @@ function renderEncounter(){
     <div class="encounter">
       <div>
         <div class="preview">
-          <div class="sprite" id="encSprite">${hasMon?`<img alt="${toTitle(e.pokemonName)}" src="${e.sprite}">`:''}</div>
+          <div class="sprite" id="encSprite">${hasMon?`<img alt="${toTitle(e.pokemonName)}" src="${e.sprite}">`:'—'}</div>
           <div>
             <div class="row">
               <input list="pokedexList" id="pokeSearch" type="search" placeholder="Pokémon wählen…" value="${hasMon?toTitle(e.pokemonName):''}">
@@ -711,7 +710,7 @@ function renderEncounter(){
   function updatePreview(){
     const chosen = resolvePokemon(search.value);
     const sprite = chosen? SPRITE(chosen.id) : null;
-    $('#encSprite').innerHTML = chosen? `<img alt="${toTitle(chosen.name)}" src="${sprite}">` : '';
+    $('#encSprite').innerHTML = chosen? `<img alt="${toTitle(chosen.name)}" src="${sprite}">` : '—';
   
     // ✨ Type-Aura (primärer Typ aus lokalem Pokédex, falls vorhanden)
     const types = chosen ? getTypesByNameFromLocal(chosen.name) : [];
@@ -1260,21 +1259,19 @@ function nzRenderLobby(st){
               <input id="nzCode" type="text" inputmode="latin"
                 maxlength="8" style="text-transform:uppercase"
                 placeholder="ABC123" value="${_esc(code)}">
-                 <button class="btn ghost" id="nzShare2" title="Teilen">Einstellungen</button>
-              <button class="btn ghost" style="display:none" id="nzGen" title="Neuen Code erzeugen">Link kopieren</button>
-              <button class="btn ghost" style="display:none" id="nzCopy" title="Link kopieren">Code kopieren</button>
-              <button class="btn ghost" style="display:none" id="nzShare" title="Teilen">Teilen</button>
-              
+              <button class="btn ghost" id="nzGen" title="Neuen Code erzeugen">Neu</button>
+              <button class="btn ghost" id="nzCopy" title="Link kopieren">Kopieren</button>
+              <button class="btn ghost" id="nzShare" title="Teilen">Teilen</button>
             </div>
   
             <div class="input-wrap name-wrap">
               <span class="poke-ball" aria-hidden="true"></span>
               <input id="nzName" type="text" hidden="true" placeholder="Dein Name" value="${_esc(name)}" readonly>
-<button id="nzRename" class="btn warn" title="Name ändern">TEST</button>
-<button id="themeBtn" class="btn warn" title="Name ändern">Theme ändern</button>
+<button id="nzRename" class="btn warn" title="Name ändern">Name ändern</button>
+<button id="themeBtn" class="btn warn" title="Name ändern">Name ändern</button>
 <button id="renameBtn" class="btn warn" title="Name ändern">Name ändern</button>
-<button id="nzCreate" style="display:none" class="btn ok">Erstellen</button>
-<button id="nzJoin" style="display:none" class="btn">${joinLabel}</button>
+<button id="nzCreate" class="btn ok">Erstellen</button>
+<button id="nzJoin" class="btn">${joinLabel}</button>
             </div>
           </div>
   
@@ -1300,8 +1297,7 @@ function nzRenderLobby(st){
             .slice()
             .sort((a,b)=> (b.online - a.online) || String(a.name||'').localeCompare(String(b.name||'')))
             .map(p=>`
-              <div class="player ${p.online?'on':'off'}" data-pid="${p.id}" data-name="${_esc((p.name||'').toLowerCase())}">
-
+              <div class="player ${p.online?'on':'off'}" data-name="${_esc((p.name||'').toLowerCase())}">
                 <div style="display:flex; align-items:center; gap:10px">
                   <span class="online-dot ${p.online?'on':'off'}" title="${p.online?'online':'offline'}"></span>
                   <span class="name">${_esc(p.name||'Trainer')}</span>
@@ -1313,9 +1309,7 @@ function nzRenderLobby(st){
         </div>
       </div>
     `;
-    // BADGE ADDON START
-    attachLobbyRolesUI(st); // Badges + Rechtsklick-Menü + Spectator-Guards
-    // BADGE ADDON ENDE
+  
     // ------- Behavior -------
     const $ = sel => elLobbyPane.querySelector(sel);
     const nzCodeEl = $('#nzCode');
@@ -1384,26 +1378,6 @@ document.getElementById('renameBtn')?.addEventListener('click', async ()=>{
         try{ await navigator.clipboard.writeText(url); toast('Link kopiert!'); }catch{}
       }
     });
-
-     // Web Share API / Fallback Kopieren
-     $('#nzShare2')?.addEventListener('click', async ()=>{
-        newLobyCode = _esc(code); // Lobby Code in einer anderen Variable speichern, da _esc immer überschrieben wird.
-        //alert(newLobyCode);
-        const res = await LoginScreens.openJoin();
-if (!res) return;
-if (res.action === 'solo') {
-  // nix tun
-} else if (res.action === 'join' || res.action === 'create') {
-  const code = res.code;
-  localStorage.setItem('lobbyCode', code);
-  history.replaceState(null,'',`?code=${code}`);
-  if (window.NZ?.ensureJoined) {
-    await window.NZ.ensureJoined();
-    await window.NZ.syncNow?.();
-  }
-}
-
-      });
   
     // Spieler-Filter
     function applyPlayerFilter(){
@@ -1438,35 +1412,22 @@ if (res.action === 'solo') {
   
     // ------- Deine bestehende Logik (unverändert) -------
     elLobbyPane.querySelector("#nzCreate").onclick = async ()=>{
-        
-        setTimeout(() =>  PokeLoader.show('Erstelle Lobby…'), 600);
-        //alert("test");
       const nm = (nzNameEl?.value || '').trim() || "Spieler";
       nzPlayerName = nm; localStorage.setItem("playerName", nm);
-      const j = await nzApi("createLobby", { name:nm, code:"" });
+      const j = await nzApi("joinLobby", { name:nm, code:"" });
       nzPlayerId = j.player.id; nzLobbyCode = j.code;
       localStorage.setItem("playerId", nzPlayerId);
       localStorage.setItem("lobbyCode", nzLobbyCode);
       history.replaceState(null,"",`?code=${nzLobbyCode}`);
-      // in nzRenderLobby -> #nzCreate onclick:
-localStorage.setItem("nuz_isHost", "1");
       await wipeRoutesAndReloadFromServer();   // ⬅️ bleibt wie gehabt
       await nzSync();
-      setTimeout(() =>  PokeLoader.hide(), 2);
-      setTimeout(() =>   PokeBanner.ok(`Lobby ${nzLobbyCode} erfolgreich erstellt`), 500);
     };
   
     elLobbyPane.querySelector("#nzJoin").onclick = async ()=>{
-        
       const nm = (nzNameEl?.value || '').trim() || "Spieler";
       nzPlayerName = nm; localStorage.setItem("playerName", nm);
-      // Nimmt Eingabe, sonst gespeicherten Code; am Ende UPPERCASE
-const cd = (nzCodeEl?.value?.trim().toUpperCase())
-|| ((localStorage.getItem('lobbyCode') || '').toUpperCase());
-
+      const cd = (nzCodeEl?.value || '').trim().toUpperCase();
       if (!cd) return alert("Bitte Lobby-Code eingeben");
-      // in nzRenderLobby -> #nzJoin onclick:
-      localStorage.setItem("nuz_isHost", "0");
       nzLobbyCode = cd; localStorage.setItem("lobbyCode", nzLobbyCode);
   
       if (nzPlayerId) {
@@ -1479,214 +1440,13 @@ const cd = (nzCodeEl?.value?.trim().toUpperCase())
       await wipeRoutesAndReloadFromServer();   // ⬅️ bleibt wie gehabt
       await nzSync();
     };
-
-    
 
     const renameBtn = $('#nzRename');
 
 // „Name ändern“ öffnet wieder den Start-Dialog
 renameBtn?.addEventListener('click', openNameDialog);
 
-}
-  
-
-  async function quickjoin(cd) {
-    
-    setTimeout(() => PokeLoader.show('Verbinde zur Lobby…'), 600);
-    //console.error(cd);
-    //alert("QuickJoin:"+cd);
-      //const nm = (nzNameEl?.value || '').trim() || "Spieler";
-      //nzPlayerName = nm; localStorage.setItem("playerName", nm);
-      //const cd = (nzCodeEl?.value || '').trim().toUpperCase();
-      if (!cd) return alert("Bitte Lobby-Code eingeben");
-      // in nzRenderLobby -> #nzJoin onclick:
-  
-      nzLobbyCode = cd; localStorage.setItem("lobbyCode", nzLobbyCode);
-      try{
-      if (nzPlayerId) {
-        alert("rejoin");
-        await nzApi("rejoinLobby", { playerId: nzPlayerId, name: nzPlayerName, code: nzLobbyCode });
-      } else {
-        const j = await nzApi("joinLobby", { name: nzPlayerName, code: nzLobbyCode });
-        nzPlayerId = j.player.id; localStorage.setItem("playerId", nzPlayerId);
-      }
-        }catch(e){
-            history.replaceState(null, "", location.pathname + location.hash);
-
-            setTimeout(() =>  PokeLoader.hide(), 1);
-            setTimeout(() =>   PokeBanner.bad(`Lobby ${nzLobbyCode} existiert nicht`), 700);
-            //alert("Fehler beim Beitreten: "+ (e?.message || e));
-            return;
-        }
-      localStorage.setItem("nuz_isHost", "0");
-      history.replaceState(null,"",`?code=${nzLobbyCode}`);
-      await wipeRoutesAndReloadFromServer();   // ⬅️ bleibt wie gehabt
-      await nzSync();
-      setTimeout(() =>  PokeLoader.hide(), 1);
-      setTimeout(() =>   PokeBanner.ok(`Lobby ${nzLobbyCode} erfolgreich beigetreten`), 500);
-    }
-
-  
-
-  //BADGE ADDON START
-  // roles-ui.js – Host-Kontextmenü + Rollen-Badges + Spectator-Guards
-(function(){
-    const ROLE_LABEL = { host:'Host', cohost:'Co-Host', spectator:'Spectator', player:'' };
-  
-    // CSS einmalig injizieren
-    (function ensureRoleStyle(){
-      if (document.getElementById('roles-style')) return;
-      const css = `
-        .role-badge{margin-left:.5rem;padding:.1rem .4rem;border-radius:.4rem;font-size:.8rem;background:#223;opacity:.9}
-        .role-badge.host{background:#3b82f6}
-        .role-badge.cohost{background:#10b981}
-        .role-badge.spectator{background:#6b7280}
-        .ctx-menu{position:absolute;z-index:10000;background:#0b1433;border:1px solid rgba(255,255,255,.12);border-radius:8px;box-shadow:0 10px 28px rgba(0,0,0,.45);padding:.35rem}
-        .ctx-menu button{display:block;width:100%;text-align:left;background:transparent;border:0;color:#fff;padding:.4rem .7rem;border-radius:.35rem;font-size:.95rem}
-        .ctx-menu button:hover{background:rgba(255,255,255,.09)}
-        .ctx-menu hr{border:0;border-top:1px solid rgba(255,255,255,.12);margin:.35rem 0}
-        .you-badge{margin-left:.4rem;background:#f59e0b;color:#111;padding:.05rem .4rem;border-radius:.35rem;font-size:.75rem;font-weight:700}
-        .role-spectator .slot, .role-spectator .poke-card{cursor:not-allowed}
-      `;
-      const st = document.createElement('style');
-      st.id='roles-style'; st.textContent = css;
-      document.head.appendChild(st);
-    })();
-  
-    function renderBadges(container, st){
-      container.querySelectorAll('.player[data-pid]').forEach(row=>{
-        const pid = row.dataset.pid;
-        const p = (st.players||[]).find(x=> String(x.id)===String(pid));
-        const role = p?.role || (st.hostId && String(p?.id)===String(st.hostId) ? 'host' : 'player');
-        row.dataset.role = role;
-        let b = row.querySelector('.role-badge');
-        if (!b && (ROLE_LABEL[role]||'').length){
-          b = document.createElement('span');
-          b.className = 'role-badge';
-          row.querySelector('.name')?.after(b);
-        }
-        if (b){
-          b.className = `role-badge ${role}`;
-          b.textContent = ROLE_LABEL[role] || '';
-          if (!b.textContent) b.remove();
-        }
-      });
-    }
-  
-    function attachContextMenu(container, st){
-      // Nur Host darf verwalten
-      const me = (st.players||[]).find(p=> String(p.id)===String(window.nzPlayerId));
-      const isHost = me?.role==='host' || (st.hostId && String(st.hostId)===String(window.nzPlayerId)) || localStorage.getItem('nuz_isHost')==='1';
-      if (!isHost) return;
-  
-      let menu;
-      const closeMenu = ()=>{ if(menu){ menu.remove(); menu=null; } };
-  
-      const openMenu = (x,y, pid, isBanned)=>{
-        closeMenu();
-        menu = document.createElement('div');
-        menu.className='ctx-menu';
-        menu.style.left = x+'px';
-        menu.style.top  = y+'px';
-        menu.innerHTML = `
-          <button data-act="set:host">Als Host setzen</button>
-          <button data-act="set:cohost">Als Co-Host setzen</button>
-          <button data-act="set:spectator">Als Spectator setzen</button>
-          <button data-act="set:player">Rolle zurücksetzen</button>
-          <hr>
-          <button data-act="kick">Kicken</button>
-          <button data-act="${isBanned?'unban':'ban'}">${isBanned?'Entbannen':'Bannen'}</button>
-        `;
-        document.body.appendChild(menu);
-  
-        menu.addEventListener('click', async (e)=>{
-          const act = e.target?.dataset?.act; if(!act) return;
-          try{
-            if (act.startsWith('set:')) {
-              await NZ.assignRole(pid, act.split(':')[1]);
-            } else if (act==='kick') {
-              await NZ.kickPlayer(pid);
-            } else if (act==='ban') {
-              await NZ.banPlayer(pid);
-            } else if (act==='unban') {
-              await NZ.unbanPlayer(pid);
-            }
-            await NZ.syncNow?.();
-          } catch(err){
-            alert('Aktion fehlgeschlagen: ' + (err?.message || err));
-          }
-          closeMenu();
-        });
-        setTimeout(()=> document.addEventListener('click', closeMenu, { once:true }), 0);
-      };
-  
-      container.addEventListener('contextmenu', (e)=>{
-        const row = e.target.closest('.player[data-pid]'); if(!row) return;
-        const pid = row.dataset.pid;
-        if (!pid || String(pid)===String(window.nzPlayerId)) return; // nicht auf sich selbst
-        e.preventDefault();
-        const p = (st.players||[]).find(x=> String(x.id)===String(pid));
-        openMenu(e.pageX, e.pageY, pid, !!p?.banned);
-      });
-  
-      // Mac/Trackpad-Fallbacks: ⌥/⌘-Klick & Long-Press
-      container.addEventListener('click', (e)=>{
-        if (!e.altKey && !e.metaKey) return;
-        const row = e.target.closest('.player[data-pid]'); if(!row) return;
-        const pid = row.dataset.pid; if (!pid || pid===String(window.nzPlayerId)) return;
-        const p = (st.players||[]).find(x=> String(x.id)===String(pid));
-        openMenu(e.pageX, e.pageY, pid, !!p?.banned);
-      });
-      let holdTimer=null;
-      container.addEventListener('mousedown', (e)=>{
-        if (e.button!==0) return;
-        const row = e.target.closest('.player[data-pid]'); if(!row) return;
-        const pid = row.dataset.pid; if (!pid || pid===String(window.nzPlayerId)) return;
-        const sx=e.pageX, sy=e.pageY;
-        holdTimer=setTimeout(()=>{
-          const p = (st.players||[]).find(x=> String(x.id)===String(pid));
-          openMenu(sx, sy, pid, !!p?.banned);
-          holdTimer=null;
-        }, 550);
-      });
-      ['mouseup','mouseleave','mousemove','scroll','wheel'].forEach(evt=>{
-        container.addEventListener(evt, ()=>{ if(holdTimer){ clearTimeout(holdTimer); holdTimer=null; } }, true);
-      });
-    }
-  
-    // Spectator: alle mutierenden Aktionen blockieren (soft-guard)
-    function attachPermissionGuards(){
-      const isSpectator = ()=>{
-        const st = window.nzLastListState || {};
-        const me = (st.players||[]).find(p=> String(p.id)===String(window.nzPlayerId));
-        return me?.role === 'spectator';
-      };
-      const maybeBlock = (e)=>{
-        if (!isSpectator()) return false;
-        e.preventDefault(); e.stopPropagation();
-        alert('Spectator-Modus: Aktion gesperrt.');
-        return true;
-      };
-      document.addEventListener('click', (e)=>{
-        if (e.target.closest('#btnCaught, #btnFailed, #btnClear, #addRouteBtn, .slot [data-remove], [data-remove]')) {
-          maybeBlock(e);
-        }
-      }, true);
-      document.addEventListener('dragstart', (e)=>{ maybeBlock(e); }, true);
-      document.addEventListener('drop', (e)=>{ maybeBlock(e); }, true);
-    }
-  
-    // Public
-    window.attachLobbyRolesUI = function(st){
-      const pane = document.querySelector('#nz-lobby'); if (!pane) return;
-      renderBadges(pane, st);
-      attachContextMenu(pane, st);
-    };
-  
-    attachPermissionGuards();
-  })();
-  
-  //BADEGE ADDON ENDE
+  }
 
   document.querySelector('#themeBtn')?.addEventListener('click', async ()=>{
     const sel = await UIPanels.openThemePicker({ initialType: AppActions.getTheme().type });
@@ -1800,7 +1560,7 @@ async function nzHeartbeat(){
     try { await nzApi("heartbeat", { playerId: nzPlayerId, code: nzLobbyCode }); } catch{}
   }
 }
-async function nzSync(){    
+async function nzSync(){
   if (!nzLobbyCode) { nzRenderLobby({ code:"", players:[] }); return; }
   try {
 
@@ -1808,15 +1568,6 @@ async function nzSync(){
 
     // ▼ zusätzlich merken --> Anzeige des momentanen Picks in der Lobby
     window.nzLastListState = st;
-
-    //BADGE ADDON START
-    try{
-        const me = (st.players||[]).find(p=> String(p.id)===String(nzPlayerId));
-        document.documentElement.classList.toggle('role-spectator', me?.role==='spectator');
-        const hostId = st.hostId || (st.players||[]).find(p=>p.role==='host')?.id;
-        if (hostId) localStorage.setItem('nuz_isHost', String(hostId)===String(nzPlayerId) ? '1' : '0');
-      }catch{}
-    //BADGE ADDON ENDE
 
     // Cache: letzter Stand route->slot (für Idempotenzcheck)
     nzLastRouteSlots = new Map((st.routeSlots || []).map(x => [x.route, x.slot]));
@@ -1957,28 +1708,6 @@ async setRouteSlot(route, targetSlot){
     // 4) lokalen Cache aktualisieren
     nzLastRouteSlots.set(route, targetSlot);
   },
-  //BADGE ADDON START
-  // --- Rollen & Moderation ---
-async assignRole(targetId, role){
-    await this.ensureJoined();
-    return nzApi('assignRole', {
-      code: nzLobbyCode, playerId: nzPlayerId, targetId, role // role: 'host'|'cohost'|'spectator'|'player'
-    });
-  },
-  async kickPlayer(targetId){
-    await this.ensureJoined();
-    return nzApi('kickPlayer', { code: nzLobbyCode, playerId: nzPlayerId, targetId });
-  },
-  async banPlayer(targetId){
-    await this.ensureJoined();
-    return nzApi('banPlayer', { code: nzLobbyCode, playerId: nzPlayerId, targetId });
-  },
-  async unbanPlayer(targetId){
-    await this.ensureJoined();
-    return nzApi('unbanPlayer', { code: nzLobbyCode, playerId: nzPlayerId, targetId });
-  },
-  
-  //BADGE ADDON ENDE
   
   async syncNow(){ await nzSync(); },
 
@@ -2119,56 +1848,5 @@ function routeIdFromName(name){
     } catch {}
   }
   
-  function clickjoinLobby(){
-    alert("test2");
-  nzJoin.click();
-}
-
-async function clickCreateLobby(){
-  
-    nzCreate.click();
-  }
-
-  async function copylink(){
-    try{
-      const el = window.nzShareLinkEl || document.querySelector('#nzShareLink');
-      const url = el?.textContent?.trim() ||
-                  `${location.origin}${location.pathname}?code=${(window.nzLobbyCode||'').toUpperCase()}`;
-      await navigator.clipboard.writeText(url);
-      // toast?.('Link kopiert!');
-    }catch(e){ console.error(e); }
-  }
-  
-  function copylooby(){
-    //quickjoin('JFHUET');
-    //return;
-    try {
-      const code = new URL(location.href).searchParams.get('code') || '';
-      if (!code) { alert('Kein Lobby-Code in der URL gefunden.'); return; }
-      navigator.clipboard.writeText(code.toUpperCase());
-      // Optional: toast('Code kopiert!');
-    } catch (e) {
-      console.error(e);
-      alert('Konnte den Code nicht kopieren.');
-    }
-  }
-
-// immer nach dem Laden starten
-
-if(localStorage.getItem('lobbyCode') == null)
-{
-    openNameDialog();
-}
-
-  
-
-
-  
-
   
   
-  //EXPORT
-  window.clickCreateLobby = clickCreateLobby; // <-- global verfügbar machen
-  window.copylooby = copylooby; // <-- global verfügbar machen
-  window.copylink = copylink; // <-- global verfügbar machen
-  window.quickjoin = quickjoin; // <-- global verfügbar machen

@@ -1,0 +1,147 @@
+/* pokemon-loader.css */
+:root {
+    --poke-ring: var(--ring, #ffd23f);
+    --poke-accent: var(--ok, #31d0aa);
+  }
+  
+  .poke-loader-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background:
+      radial-gradient(1200px 720px at 50% 30%,
+        rgba(255,210,63,.08), rgba(0,0,0,.65) 55%, rgba(0,0,0,.85));
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 1.18s ease;
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    color: #e8ecff;
+  }
+  .poke-loader-overlay.is-in {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  
+  .poke-loader-card {
+    width: min(520px, 92vw);
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,.14);
+    background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+    box-shadow: 0 28px 90px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.06) inset;
+    padding: 20px 18px 18px;
+    backdrop-filter: blur(8px) saturate(120%);
+  }
+  
+  .poke-loader-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  
+  .pokeball {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 50% 35%, #EE1515 0 36%, #fff 37% 64%, #111 65% 100%);
+    box-shadow:
+      0 0 0 1px #fff inset,
+      0 0 0 2px #EE1515 inset,
+      0 8px 18px rgba(0,0,0,.35);
+    animation: ballSpin 1.1s linear infinite, ballFloat 2.8s ease-in-out infinite;
+  }
+  @keyframes ballSpin { to { transform: rotate(360deg) } }
+  @keyframes ballFloat {
+    0%,100% { transform: translateY(0) }
+    50%     { transform: translateY(-3px) }
+  }
+  
+  .poke-loader-title {
+    font-weight: 900;
+    letter-spacing: .3px;
+    font-size: 16px;
+  }
+  
+  .poke-loader-body {
+    display: grid;
+    gap: 14px;
+    margin-top: 6px;
+  }
+  
+  .poke-loader-status {
+    font-weight: 800;
+    letter-spacing: .2px;
+  }
+  
+  .poke-loader-dots {
+    display: inline-grid;
+    grid-auto-flow: column;
+    gap: 6px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .poke-loader-dots i {
+    width: 6px; height: 6px; border-radius: 999px;
+    background: var(--poke-ring);
+    animation: dotBounce 1s ease-in-out infinite;
+    box-shadow: 0 0 0 2px rgba(255,255,255,.06) inset;
+  }
+  .poke-loader-dots i:nth-child(2){ animation-delay: .12s }
+  .poke-loader-dots i:nth-child(3){ animation-delay: .24s }
+  @keyframes dotBounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: .8 }
+    30%          { transform: translateY(-6px); opacity: 1 }
+  }
+  
+  .poke-loader-bar {
+    position: relative;
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.10);
+    overflow: hidden;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+  }
+  .poke-loader-fill {
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, var(--poke-ring), var(--poke-accent));
+    transform-origin: left center;
+    animation: shimmer 2.6s ease-in-out infinite;
+  }
+  @keyframes shimmer {
+    0%   { transform: translateX(-100%) scaleX(.4) }
+    50%  { transform: translateX(0%)   scaleX(1.0) }
+    100% { transform: translateX(100%)  scaleX(.4) }
+  }
+  
+  .poke-loader-hint {
+    font-size: 12px;
+    color: #b8c4ff;
+    opacity: .9;
+  }
+  
+  /* little sparkle band (pure CSS) */
+  .poke-sparkle {
+    position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(6px 6px at 10% 30%, rgba(255,255,255,.8), transparent 60%),
+      radial-gradient(5px 5px at 80% 20%, rgba(255,255,255,.7), transparent 60%),
+      radial-gradient(4px 4px at 60% 70%, rgba(255,255,255,.6), transparent 60%);
+    opacity: .7;
+    animation: twinkle 3s ease-in-out infinite;
+  }
+  @keyframes twinkle {
+    50% { filter: brightness(1.25) }
+  }
+  
+  /* reduce motion */
+  @media (prefers-reduced-motion: reduce) {
+    .pokeball { animation: none }
+    .poke-loader-dots i { animation: none }
+    .poke-loader-fill { animation: none }
+    .poke-sparkle { animation: none }
+  }
+  

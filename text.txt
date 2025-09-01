@@ -1,0 +1,7 @@
+window.nzLastListState --> wichtig
+
+--> alle boxen
+--> lobby besser machen
+--> routes
+--> performance
+--> themes fixen

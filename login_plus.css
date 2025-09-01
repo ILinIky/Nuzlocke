@@ -1,0 +1,106 @@
+/* ===== Login+ Wizard, Parallax, Stardust, Steps, Theme Chips ===== */
+
+/* Einstieg-FX */
+.login-card{ opacity:0; transform:translateY(14px) scale(.98); filter:blur(6px); }
+.login-card.is-in{ opacity:1; transform:none; filter:none; transition:opacity .40s ease, transform .40s ease, filter .40s ease; }
+
+/* Banner Parallax (nutzt ::before aus deiner CSS) */
+.login-card::before{ transform:translate3d(var(--px,0), var(--py,0), 0) scale(1.05); transition:transform .18s ease; }
+
+/* Wizard-Container */
+.login-wizard{ position:relative; margin-top:10px; }
+.wiz-head{ display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:12px; }
+.ball-step{
+  width:18px; height:18px; border-radius:50%;
+  background: radial-gradient(circle at 50% 35%, #EE1515 0 36%, #fff 37% 64%, #111 65% 100%);
+  box-shadow: 0 0 0 1px #fff inset, 0 0 0 2px #EE1515 inset, 0 8px 16px rgba(0,0,0,.35);
+  opacity:.45; transform:scale(.95); transition:.18s ease;
+}
+.ball-step.on{ opacity:1; transform:scale(1.05) }
+
+/* Wizard Steps */
+.wiz-body{ position:relative; min-height:220px; }
+.wiz-step{ position:absolute; inset:0; padding:6px 8px; display:none; }
+.wiz-step.active{ display:block; animation: wizIn .28s ease }
+@keyframes wizIn{ from{ transform:translateY(8px); opacity:0 } to{ transform:none; opacity:1 } }
+
+/* Inputs */
+.wiz-row{ display:flex; gap:10px; justify-content:center; align-items:center; flex-wrap:wrap; margin:10px 0 }
+.wiz-row .note{ color:#9fb1ff; font-size:12px }
+
+/* Avatar-Bubble (ohne externe Assets) */
+.avatar-bubble{
+  width:72px; height:72px; border-radius:50%;
+  background: radial-gradient(70px 42px at 50% 25%, rgba(255,255,255,.16), rgba(0,0,0,.25)),
+             linear-gradient(160deg, #2a2f58, #121633);
+  border:1px solid rgba(255,255,255,.18);
+  display:grid; place-items:center; font-weight:900; font-size:28px;
+  box-shadow: 0 10px 28px rgba(0,0,0,.45), 0 0 0 2px rgba(255,255,255,.06) inset;
+  color:#fff; letter-spacing:1px;
+}
+.avatar-bubble.spin{ animation: avatarSpin 1s ease }
+@keyframes avatarSpin{ from{ transform:rotate(-8deg) scale(.92) } 60%{ transform:rotate(6deg) scale(1.06) } to{ transform:none } }
+
+/* Theme Chips (Type-Paletten) */
+.theme-grid{ display:grid; grid-template-columns:repeat(4, minmax(90px,1fr)); gap:10px; }
+.theme-chip{
+  border:1px solid rgba(255,255,255,.16); border-radius:12px; padding:8px 10px; text-align:center;
+  background:#0d1538; cursor:pointer; font-weight:900; letter-spacing:.2px; user-select:none;
+  box-shadow:0 8px 20px rgba(0,0,0,.35);
+  transition:.18s ease; color:#e8ecff;
+}
+.theme-chip:hover{ transform:translateY(-2px) }
+.theme-chip.on{ box-shadow:0 0 0 2px var(--ring) inset, 0 10px 32px rgba(255,210,63,.1) }
+
+/* Mappe Typ → Farben via data-type (Previewbar) */
+.theme-preview{
+  margin-top:10px; height:8px; border-radius:999px; overflow:hidden;
+  background: linear-gradient(90deg, var(--themeA,#ffd23f), var(--themeB,#31d0aa));
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+}
+
+/* Lobby Code Row */
+.wiz-code{ text-transform:uppercase }
+.wiz-actions{ display:flex; gap:10px; justify-content:center; margin-top:8px }
+
+/* Secondary hint */
+.wiz-hint{ color:#9fb1ff; font-size:12px; text-align:center; margin-top:6px }
+
+/* Stardust Canvas */
+#login-stars{
+  position:fixed; inset:0; z-index:60; pointer-events:none; opacity:.45; mix-blend-mode:screen;
+}
+
+/* Countdown-Bubble */
+.count-bubble{
+  position:absolute; right:12px; top:12px; z-index:3;
+  background: #0e183b; border:1px solid rgba(255,255,255,.22); color:#fff;
+  padding:6px 10px; border-radius:999px; font-weight:900; font-size:12px;
+  box-shadow:0 8px 22px rgba(0,0,0,.35);
+  transform:translateY(-6px); opacity:0;
+}
+.count-bubble.show{ opacity:1; transform:translateY(0); transition:.2s ease }
+
+/* Start Button Loader + Flash (reused id) */
+#startBtn{ position:relative; overflow:hidden }
+#startBtn.loading{ pointer-events:none; opacity:.9 }
+#startBtn.loading::before{
+  content:""; position:absolute; left:12px; top:50%; width:16px; height:16px; transform:translateY(-50%);
+  border-radius:50%;
+  background: radial-gradient(circle at 50% 35%, #EE1515 0 36%, #fff 37% 64%, #111 65% 100%);
+  box-shadow: 0 0 0 2px #fff inset, 0 0 0 4px #EE1515 inset;
+  animation: ballSpin .8s linear infinite;
+}
+@keyframes ballSpin{ to{ transform:translateY(-50%) rotate(360deg) } }
+.login-card.starting::after{
+  content:""; position:fixed; inset:0; z-index:100; pointer-events:none;
+  background: radial-gradient(600px 280px at 50% 40%, rgba(255,210,63,.20), rgba(0,0,0,.72) 60%, rgba(0,0,0,.86));
+  animation: startFlash .5s ease forwards;
+}
+@keyframes startFlash{ from{opacity:0} 50%{opacity:1} to{opacity:0} }
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce){
+  .login-card, .login-card.is-in, .login-card::before{ transition:none; animation:none }
+  .theme-chip:hover{ transform:none }
+}
