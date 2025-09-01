@@ -118,9 +118,9 @@
         const code = persistLobbyCode(raw);
   
         if (g.nzPlayerId) {
-          await callNZ('rejoinLobby', { playerId: g.nzPlayerId, name, code });
+          await callNZ('rejoinLobby', { pid: g.nzPlayerId, name, code });
         } else {
-          const j = await callNZ('joinLobby', { name, code });
+          const j = await callNZ('joinLobby', { name, code,id: g.nzPlayerId });
           g.nzPlayerId = j?.player?.id || '';
           try { localStorage.setItem('playerId', g.nzPlayerId); } catch {}
           if (j?.code) persistLobbyCode(j.code);

@@ -1214,7 +1214,7 @@ async function nzListState(code) {
   const r = await fetch(NZ_API, {
     method: "POST",
     headers: { "content-type":"application/json" },
-    body: JSON.stringify({ action:"list", code: (code||"").toUpperCase() }),
+    body: JSON.stringify({ action:"list", code: (code||"").toUpperCase(),pid: nzPlayerId }),
     cache: "no-store"
   });
   if (r.ok) return r.json();
@@ -1443,7 +1443,7 @@ if (res.action === 'solo') {
         //alert("test");
       const nm = (nzNameEl?.value || '').trim() || "Spieler";
       nzPlayerName = nm; localStorage.setItem("playerName", nm);
-      const j = await nzApi("createLobby", { name:nm, code:"" });
+      const j = await nzApi("createLobby", { name:nm, code:"" ,id:nzPlayerId});
       nzPlayerId = j.player.id; nzLobbyCode = j.code;
       localStorage.setItem("playerId", nzPlayerId);
       localStorage.setItem("lobbyCode", nzLobbyCode);
@@ -1470,9 +1470,9 @@ const cd = (nzCodeEl?.value?.trim().toUpperCase())
       nzLobbyCode = cd; localStorage.setItem("lobbyCode", nzLobbyCode);
   
       if (nzPlayerId) {
-        await nzApi("rejoinLobby", { playerId: nzPlayerId, name: nzPlayerName, code: nzLobbyCode });
+        await nzApi("rejoinLobby", { pid: nzPlayerId, name: nzPlayerName, code: nzLobbyCode });
       } else {
-        const j = await nzApi("joinLobby", { name: nzPlayerName, code: nzLobbyCode });
+        const j = await nzApi("joinLobby", { name: nzPlayerName, code: nzLobbyCode,id:nzPlayerId });
         nzPlayerId = j.player.id; localStorage.setItem("playerId", nzPlayerId);
       }
       history.replaceState(null,"",`?code=${nzLobbyCode}`);
@@ -1505,9 +1505,9 @@ renameBtn?.addEventListener('click', openNameDialog);
       try{
       if (nzPlayerId) {
         //alert("rejoin");
-        await nzApi("rejoinLobby", { playerId: nzPlayerId, name: nzPlayerName, code: nzLobbyCode });
+        await nzApi("rejoinLobby", { pid: nzPlayerId, name: nzPlayerName, code: nzLobbyCode });
       } else {
-        const j = await nzApi("joinLobby", { name: nzPlayerName, code: nzLobbyCode });
+        const j = await nzApi("joinLobby", { name: nzPlayerName, code: nzLobbyCode,id:nzPlayerId });
         nzPlayerId = j.player.id; localStorage.setItem("playerId", nzPlayerId);
       }
         }catch(e){
@@ -1797,7 +1797,7 @@ function nzApplyGlobalToLocal(st){
 // --- Heartbeat & Sync ---
 async function nzHeartbeat(){
   if (nzPlayerId && nzLobbyCode) {
-    try { await nzApi("heartbeat", { playerId: nzPlayerId, code: nzLobbyCode }); } catch{}
+    try { await nzApi("heartbeat", { pid: nzPlayerId, code: nzLobbyCode }); } catch{}
   }
 }
 async function nzSync(){    
@@ -1837,7 +1837,7 @@ setInterval(nzSync, NZ_POLL_MS);
   if (nzLobbyCode && !nzPlayerId) {
     const nm = (state?.user?.name || nzPlayerName || prompt("Dein Name?") || "Spieler").trim();
     nzPlayerName = nm; localStorage.setItem("playerName", nm);
-    const j = await nzApi("joinLobby", { name:nm, code:nzLobbyCode });
+    const j = await nzApi("joinLobby", { name:nm, code:nzLobbyCode,id:nzPlayerId });
     nzPlayerId = j.player.id; localStorage.setItem("playerId", nzPlayerId);
     await wipeRoutesAndReloadFromServer(); // ⬅️ HIER
   }
@@ -1854,7 +1854,7 @@ window.NZ = {
     if (!nzPlayerId) {
       const nm = (state?.user?.name || nzPlayerName || prompt("Dein Name?") || "Spieler").trim();
       nzPlayerName = nm; localStorage.setItem("playerName", nm);
-      const j = await nzApi("joinLobby", { name: nm, code: nzLobbyCode || "" });
+      const j = await nzApi("joinLobby", { name: nm, code: nzLobbyCode || "",id:nzPlayerId });
       nzPlayerId = j.player.id;
       nzLobbyCode = j.code || nzLobbyCode || "";
       localStorage.setItem("playerId", nzPlayerId);
@@ -1865,7 +1865,7 @@ window.NZ = {
       return;
     }
     if (nzLobbyCode) {
-      try { await nzApi("rejoinLobby", { playerId: nzPlayerId, name: (nzPlayerName || state?.user?.name || "Spieler"), code: nzLobbyCode }); } catch(_) {}
+      try { await nzApi("rejoinLobby", { pid: nzPlayerId, name: (nzPlayerName || state?.user?.name || "Spieler"), code: nzLobbyCode }); } catch(_) {}
     }
   },
 
@@ -1873,7 +1873,7 @@ window.NZ = {
     await this.ensureJoined();
     await nzApi('upsertPokemon', {
         code: nzLobbyCode,          // <— wird gesendet
-        playerId: nzPlayerId,
+        pid: nzPlayerId,
         route,
         species,
         caught,
@@ -1883,7 +1883,7 @@ window.NZ = {
 
   async assignGlobalSlot(route, slot){
     await this.ensureJoined();
-    await nzApi('assignRouteSlot', { code: nzLobbyCode, playerId: nzPlayerId, route, slot });
+    await nzApi('assignRouteSlot', { code: nzLobbyCode, pid: nzPlayerId, route, slot });
   },
 
   // ❌ ALT: clearRouteSlot(...) hatte Fallback mit slot:null/0
@@ -1896,7 +1896,7 @@ async clearRouteSlot(route){
         console.warn("nzLobbyCode", nzLobbyCode);
         console.warn("nzPlayerId", nzPlayerId);
         console.warn("nzPlayerId", route);
-      await nzApi('clearRouteSlot', { code: nzLobbyCode, playerId: nzPlayerId, route });
+      await nzApi('clearRouteSlot', { code: nzLobbyCode, pid: nzPlayerId, route });
     } catch (e) {
         console.error("FEHLER! clearRouteSlot:", e);
       // Wenn dein Backend die Action nicht kennt oder sie optional ist, ignorieren wir das.
@@ -1929,21 +1929,21 @@ async setRouteSlot(route, targetSlot){
   
     // 3) Setzen – robust gegen "duplicate key"
     try {
-      await nzApi('assignRouteSlot', { code: nzLobbyCode, playerId: nzPlayerId, route, slot: targetSlot });
+      await nzApi('assignRouteSlot', { code: nzLobbyCode, pid: nzPlayerId, route, slot: targetSlot });
     } catch (e1) {
       const msg = String(e1.message || "");
       if (/duplicate|unique|exists/i.test(msg)) {
         // Versuch per UPDATE/UPSERT
         try {
-          await nzApi('updateRouteSlot', { code: nzLobbyCode, playerId: nzPlayerId, route, slot: targetSlot });
+          await nzApi('updateRouteSlot', { code: nzLobbyCode, pid: nzPlayerId, route, slot: targetSlot });
         } catch (e2) {
           try {
-            await nzApi('upsertRouteSlot', { code: nzLobbyCode, playerId: nzPlayerId, route, slot: targetSlot });
+            await nzApi('upsertRouteSlot', { code: nzLobbyCode, pid: nzPlayerId, route, slot: targetSlot });
           } catch (e3) {
             // letzter Versuch: aktuelle Route löschen → dann normal setzen
             try {
               await this.clearRouteSlot(route);
-              await nzApi('assignRouteSlot', { code: nzLobbyCode, playerId: nzPlayerId, route, slot: targetSlot });
+              await nzApi('assignRouteSlot', { code: nzLobbyCode, pid: nzPlayerId, route, slot: targetSlot });
             } catch (e4) {
               throw e4;
             }
@@ -1962,20 +1962,20 @@ async setRouteSlot(route, targetSlot){
 async assignRole(targetId, role){
     await this.ensureJoined();
     return nzApi('assignRole', {
-      code: nzLobbyCode, playerId: nzPlayerId, targetId, role // role: 'host'|'cohost'|'spectator'|'player'
+      code: nzLobbyCode, pid: nzPlayerId, targetId, role // role: 'host'|'cohost'|'spectator'|'player'
     });
   },
   async kickPlayer(targetId){
     await this.ensureJoined();
-    return nzApi('kickPlayer', { code: nzLobbyCode, playerId: nzPlayerId, targetId });
+    return nzApi('kickPlayer', { code: nzLobbyCode, pid: nzPlayerId, targetId });
   },
   async banPlayer(targetId){
     await this.ensureJoined();
-    return nzApi('banPlayer', { code: nzLobbyCode, playerId: nzPlayerId, targetId });
+    return nzApi('banPlayer', { code: nzLobbyCode, pid: nzPlayerId, targetId });
   },
   async unbanPlayer(targetId){
     await this.ensureJoined();
-    return nzApi('unbanPlayer', { code: nzLobbyCode, playerId: nzPlayerId, targetId });
+    return nzApi('unbanPlayer', { code: nzLobbyCode, pid: nzPlayerId, targetId });
   },
   
   //BADGE ADDON ENDE

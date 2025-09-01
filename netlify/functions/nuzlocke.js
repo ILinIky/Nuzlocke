@@ -135,7 +135,8 @@ async function assertIsHost(code, playerId) {
 }
 
 // ---- Actions ----
-async function createLobby({ name, code }){
+async function createLobby({ name, code, id }){
+  console.log("Current User: -->"+id);
   const nm = String(name || "").trim().slice(0, 40);
   if (!nm) throw new Error("name required");
   let cd = normCode(code); if (!cd) cd = genCode(6);
@@ -144,7 +145,7 @@ async function createLobby({ name, code }){
 
   await sql`INSERT INTO lobbies(code) VALUES(${cd}) ON CONFLICT(code) DO NOTHING`;
 
-  const id = (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)) + "-" + Date.now();
+  //const id = (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)) + "-" + Date.now();
   const nametolower = nm.toLowerCase();
   await sql`INSERT INTO players(id,name,joined_at,last_seen,name_lower) VALUES(${id},${nm},now(),now(),${nametolower}) ON CONFLICT(id) DO NOTHING`;
 
@@ -168,7 +169,7 @@ async function createLobby({ name, code }){
 
 }
 
-async function joinLobby({ name, code }){
+async function joinLobby({ name, code, id }){
   const nm = String(name || "").trim().slice(0, 40);
   if (!nm) throw new Error("name required");
   let cd = normCode(code); if (!cd) cd = genCode(6);
@@ -181,7 +182,7 @@ async function joinLobby({ name, code }){
   console.log("Joining lobby", cd);
   await sql`INSERT INTO lobbies(code) VALUES(${cd}) ON CONFLICT(code) DO NOTHING`;
 
-  const id = (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)) + "-" + Date.now();
+  //const id = (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)) + "-" + Date.now();
   const nametolower = nm.toLowerCase();
   await sql`INSERT INTO players(id,name,joined_at,last_seen) VALUES(${id},${nm},now(),now(),${nametolower}) ON CONFLICT(id) DO NOTHING`;
 
@@ -205,8 +206,8 @@ async function joinLobby({ name, code }){
 }
 }
 
-async function rejoinLobby({ playerId, name, code }){
-  const pid = must(playerId,"playerId");
+async function rejoinLobby({ name, code,pid }){
+  //const pid = must(playerId,"playerId");
   const nm = String(name||"").trim().slice(0,40);
   const cd = normCode(must(code,"code"));
 
@@ -236,8 +237,8 @@ async function rejoinLobby({ playerId, name, code }){
 }
 
 
-async function heartbeat({ playerId, code }){
-  const pid = must(playerId,"playerId");
+async function heartbeat({ code,pid }){
+  //const pid = must(playerId,"playerId");
   const cd  = normCode(must(code,"code"));
   await sql`UPDATE players SET last_seen=now() WHERE id=${pid}`;
   // nur wenn nicht gebannt
@@ -246,9 +247,9 @@ async function heartbeat({ playerId, code }){
   return { ok:true, at: nowIso() };
 }
 
-async function upsertPokemon({ code, playerId, route, species, caught=true, nickname }){
+async function upsertPokemon({ code, pid, route, species, caught=true, nickname }){
   const cd = normCode(must(code, "code"));
-  const pid = must(playerId,"playerId");
+  //const pid = must(playerId,"playerId");
   const rt  = normRoute(must(route,"route"));
   const sp  = String(must(species,"species")).slice(0,60);
 
@@ -266,9 +267,9 @@ async function upsertPokemon({ code, playerId, route, species, caught=true, nick
   return { ok:true };
 }
 
-async function assignRouteSlot({ code, playerId, player, route, slot }) {
+async function assignRouteSlot({ code, pid, route, slot }) {
   const cd = normCode(must(code, "code"));
-  const pid = String(must(playerId ?? player, "playerId"));
+  //const pid = String(must(playerId ?? player, "playerId"));
   const rt  = normRoute(must(route, "route"));
   const s   = Number(must(slot, "slot"));
   if (!(s >= 1 && s <= 6)) throw new Error("slot must be 1..6");
@@ -290,9 +291,9 @@ async function assignRouteSlot({ code, playerId, player, route, slot }) {
   return { ok: true };
 }
 
-async function clearRouteSlot({ code, playerId, player, route }) {
+async function clearRouteSlot({ code, pid, player, route }) {
   const cd = normCode(must(code, "code"));
-  const pid = String(must(playerId ?? player, "playerId"));
+  //const pid = String(must(playerId ?? player, "playerId"));
   const rt  = normRoute(must(route, "route"));
 
   await assertMember(cd, pid);
@@ -304,9 +305,9 @@ async function clearRouteSlot({ code, playerId, player, route }) {
 }
 
 // -------- Moderation / Rollen (korrekt, ohne "xc") --------
-async function assignRole({ code, playerId, targetId, role }) {
+async function assignRole({ code, pid, targetId, role }) {
   const cd  = normCode(must(code, "code"));
-  const pid = must(playerId, "playerId");
+  //const pid = must(playerId, "playerId");
   const tid = must(targetId, "targetId");
   const newRole = String(must(role, "role")).toLowerCase(); // host|cohost|spectator|player
   if (!['host','cohost','spectator','player'].includes(newRole)) throw new Error("invalid role");
@@ -327,9 +328,9 @@ async function assignRole({ code, playerId, targetId, role }) {
   return { ok:true };
 }
 
-async function kickPlayer({ code, playerId, targetId }) {
+async function kickPlayer({ code, pid, targetId }) {
   const cd  = normCode(must(code, "code"));
-  const pid = must(playerId, "playerId");
+  //const pid = must(playerId, "playerId");
   const tid = must(targetId, "targetId");
 
   await assertIsHost(cd, pid);
@@ -342,9 +343,9 @@ async function kickPlayer({ code, playerId, targetId }) {
   return { ok:true };
 }
 
-async function banPlayer({ code, playerId, targetId }) {
+async function banPlayer({ code, pid, targetId }) {
   const cd  = normCode(must(code, "code"));
-  const pid = must(playerId, "playerId");
+  //const pid = must(playerId, "playerId");
   const tid = must(targetId, "targetId");
 
   // Nur Host darf bannen
@@ -381,9 +382,9 @@ async function banPlayer({ code, playerId, targetId }) {
 }
 
 
-async function unbanPlayer({ code, playerId, targetId }) {
+async function unbanPlayer({ code, pid, targetId }) {
   const cd  = normCode(must(code, "code"));
-  const pid = must(playerId, "playerId");
+  //const pid = must(playerId, "playerId");
   const tid = must(targetId, "targetId");
 
   const hostRow = await sql`SELECT host_id FROM lobbies WHERE code=${cd}`;
@@ -401,7 +402,7 @@ async function unbanPlayer({ code, playerId, targetId }) {
 
 
 // -------- Read State --------
-async function listState({ code }){
+async function listState({ code,pid }){
   const cd = normCode((code ?? "").toString());
 
   if (!cd) return { code: "", players: [], routeSlots: [], boxes: {}, now: nowIso() };
@@ -421,6 +422,8 @@ async function listState({ code }){
 
   const routeSlots = await sql`SELECT route, slot, player_id FROM route_slots WHERE code=${cd}`;
 
+  const pokemons = await sql`SELECT route, species, nickname,caught FROM pokemons WHERE code=${cd} and player_id=${pid}`;
+
   const rows = await sql/*sql*/`
     SELECT po.player_id, po.route, po.species, po.caught
     FROM pokemons po
@@ -436,7 +439,7 @@ async function listState({ code }){
   const hostRow = await sql`SELECT host_id FROM lobbies WHERE code=${cd}`;
   const hostId  = hostRow?.[0]?.host_id || null;
 
-  return { code: cd, hostId, players: members, routeSlots, boxes, now: nowIso() };
+  return { code: cd, hostId, players: members, routeSlots, pokemons, boxes, now: nowIso() };
 }
 
 async function listRoutes({ code }) {

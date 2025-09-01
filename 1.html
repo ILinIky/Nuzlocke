@@ -21,13 +21,13 @@
   PokeLoader.show('Verbinde zur Lobby…');
 
   // Text später updaten
-  setTimeout(() => PokeLoader.setText('Hole Team-Daten…'), 2000);
-  setTimeout(() => PokeLoader.setHint('Das kann einen Moment dauern.'), 4000);
+  setTimeout(() => PokeLoader.setText('Hole Team-Daten…'), 500);
+  setTimeout(() => PokeLoader.setHint('Das kann einen Moment dauern.'), 1000);
   // Optionaler Untertext (kleiner Hinweis)
   //PokeLoader.setHint('Das kann einen Moment dauern.');
 
   // Fertig
-  setTimeout(() =>  PokeLoader.hide(), 6000);
+  setTimeout(() =>  PokeLoader.hide(), 1500);
   
   //PokeLoader.hide();
 </script>
@@ -758,6 +758,7 @@ input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inse
  
   <script src="control-api2.js"></script>
   <script src="hotkeys.js"></script>
+  <script src="stable-player-id.js"></script>
   
  
 <script>document.addEventListener('DOMContentLoaded', ()=> LoginFX.init());</script>
