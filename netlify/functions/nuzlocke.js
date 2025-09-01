@@ -93,6 +93,7 @@ await sql`CREATE INDEX IF NOT EXISTS players_name_lower_idx ON players(name_lowe
 }
 
 async function ensureTables() {
+  setup();
   console.log("Ensuring tables...");
   // Basis-Tabellen
  
