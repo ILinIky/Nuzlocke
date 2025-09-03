@@ -21,13 +21,14 @@
   PokeLoader.show('Verbinde zur Lobby…');
 
   // Text später updaten
-  setTimeout(() => PokeLoader.setText('Hole Team-Daten…'), 500);
-  setTimeout(() => PokeLoader.setHint('Das kann einen Moment dauern.'), 1000);
+  setTimeout(() => PokeLoader.setText('Hole Team-Daten…'), 250);
+  setTimeout(() => PokeLoader.setHint('Das kann einen Moment dauern.'), 600);
   // Optionaler Untertext (kleiner Hinweis)
   //PokeLoader.setHint('Das kann einen Moment dauern.');
 
   // Fertig
   setTimeout(() =>  PokeLoader.hide(), 1500);
+
   
   //PokeLoader.hide();
 </script>
@@ -169,7 +170,8 @@ main{ max-width:1200px; margin:18px auto 64px; padding:0 18px }
 .badge{ padding:2px 8px; border-radius:999px; font-size:12px; font-weight:900; border:1px solid rgba(255,255,255,.18) }
 .badge.pending{ background:#19203f; color:#c7d2ff }
 .badge.caught{ background:#0a3a31; color:#8af0c9 }
-.badge.failed{ background:#3a1010; color:#ff9b9b }
+.badge.failed{ background:#3a1010; color:#da8814 }
+.badge.dead{ background:#3a1010; color:#ff9b9b }
 
 @keyframes routePop{ 0%{ transform:scale(.98) } 30%{ transform:scale(1.04) } 60%{ transform:scale(.99) } 100%{ transform:scale(1) } }
 .route-item.caught-pop{ animation: routePop .6s ease }
@@ -557,6 +559,10 @@ input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inse
     <div class="chip-group">
       <div class="chip-title">Routen</div>
       <div class="chip-row" id="chipRoutes"></div>
+    </div>
+    <div class="chip-group">
+      <div class="chip-title">Special Boxes</div>
+      <div class="chip-row" id="chipBoxes"></div>
     </div>
   </div>
 

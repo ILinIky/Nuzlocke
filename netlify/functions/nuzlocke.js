@@ -90,11 +90,33 @@ await sql`CREATE INDEX IF NOT EXISTS players_name_lower_idx ON players(name_lowe
      // lobby_members: role & banned
   try { await sql`ALTER TABLE lobby_members ADD COLUMN IF NOT EXISTS role text DEFAULT 'player'`; } catch {}
   try { await sql`ALTER TABLE lobby_members ADD COLUMN IF NOT EXISTS banned boolean NOT NULL DEFAULT false`; } catch {}
+
+  // Migration: pokemons.caught BOOLEAN -> VARCHAR(16)
+try {
+  await sql`ALTER TABLE pokemons ALTER COLUMN caught DROP DEFAULT`;
+  await sql`
+    ALTER TABLE pokemons
+    ALTER COLUMN caught TYPE varchar(16)
+    USING (
+      CASE
+        WHEN caught IS TRUE  THEN 'caught'
+        WHEN caught IS FALSE THEN 'failed'
+        ELSE 'caught'
+      END
+    )
+  `;
+  await sql`ALTER TABLE pokemons ALTER COLUMN caught SET DEFAULT 'caught'`;
+  await sql`ALTER TABLE pokemons ALTER COLUMN caught SET NOT NULL`;
+} catch (_) {
+  // schon migriert oder in Benutzung – sicher ignorieren
+}
 }
 
 async function ensureTables() {
+
+
   //setup();
-  console.log("Ensuring tables...");
+  //console.log("Ensuring tables...");
   // Basis-Tabellen
  
 
@@ -248,7 +270,7 @@ async function heartbeat({ code,pid }){
   return { ok:true, at: nowIso() };
 }
 
-async function upsertPokemon({ code, pid, route, species, caught=true, nickname }){
+async function upsertPokemon({ code, pid, route, species, caught, nickname }){
   const cd = normCode(must(code, "code"));
   //const pid = must(playerId,"playerId");
   const rt  = normRoute(must(route,"route"));
@@ -261,7 +283,7 @@ async function upsertPokemon({ code, pid, route, species, caught=true, nickname 
 
   await sql`
     INSERT INTO pokemons(player_id,route,species,caught,nickname,code)
-    VALUES(${pid},${rt},${sp},${Boolean(caught)},${nickname},${cd})
+    VALUES(${pid},${rt},${sp},${caught},${nickname},${cd})
     ON CONFLICT(player_id,route,code)
     DO UPDATE SET species=EXCLUDED.species, caught=EXCLUDED.caught, nickname=COALESCE(EXCLUDED.nickname, pokemons.nickname)
   `;
@@ -454,6 +476,53 @@ async function listRoutes({ code }) {
   return { routes: rows };
 }
 
+// --- Neu: Useable-Check ---
+async function useable({ name, code, route }) {
+  const cd = normCode(must(code, "code"));
+  const rt = normRoute(must(route, "route"));
+
+  const isTrue = v => String(v).trim().toLowerCase() === 'true';
+
+  // Spieler-spezifisch
+  if (name && String(name).trim() !== "") {
+    const nmLower = String(name).trim().toLowerCase();
+    const p = await sql`SELECT id, name FROM players WHERE name_lower=${nmLower} LIMIT 1`;
+    if (p.length === 0) {
+      // kein Spieler mit dem Namen
+      return { usable: false, count: 0, players: [], scope: "player" };
+    }
+    const pid = p[0].id;
+
+    const rows = await sql/*sql*/`
+      SELECT po.caught, po.player_id, p.name
+      FROM pokemons po
+      JOIN players p ON p.id = po.player_id
+      WHERE po.code=${cd} AND po.route=${rt} AND po.player_id=${pid}
+    `;
+
+    const offenders = rows.filter(r => !isTrue(r.caught))
+                          .map(r => ({ playerId: r.player_id, name: r.name, caught: r.caught }));
+
+    const usable = rows.length > 0 && offenders.length === 0;
+    return { usable, count: rows.length, players: offenders, scope: "player" };
+  }
+
+  // Lobby-weit
+  const rows = await sql/*sql*/`
+    SELECT po.caught, po.player_id, p.name
+    FROM pokemons po
+    JOIN players p ON p.id = po.player_id
+    WHERE po.code=${cd} AND po.route=${rt}
+  `;
+
+  const offenders = rows.filter(r => !isTrue(r.caught))
+                        .map(r => ({ playerId: r.player_id, name: r.name, caught: r.caught }));
+
+  const usable = rows.length > 0 && offenders.length === 0;
+  return { usable, count: rows.length, players: offenders };
+}
+
+
 export default async (req) => {
   try {
     if (!process.env.NETLIFY_DATABASE_URL) return json({ error:"NETLIFY_DATABASE_URL fehlt" }, 500);
@@ -489,6 +558,7 @@ export default async (req) => {
 
     if (action === "list")             return json(await listState(body));
     if (action === "listRoutes")       return json(await listRoutes(body));
+    if (action === "useable")          return json(await useable(body));
 
     return json({ error:`Unknown action: ${action}` }, 400);
   } catch (e) {

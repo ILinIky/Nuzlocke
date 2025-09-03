@@ -7,6 +7,7 @@
   const searchEl  = document.getElementById('boxSearch');
   const typesWrap = document.getElementById('chipTypes');
   const routesWrap= document.getElementById('chipRoutes');
+  const  specialboxes = document.getElementById('chipBoxes');
   const clearBtn  = document.getElementById('boxClear');
   const countEl   = document.getElementById('boxCount');
 
@@ -59,11 +60,27 @@
     });
 
     // Sort nice: by count desc then name
-    const sortedTypes  = [...typeCount.entries()].sort((a,b)=> b[1]-a[1] || a[0].localeCompare(b[0]));
+    //const sortedTypes  = [...typeCount.entries()].sort((a,b)=> b[1]-a[1] || a[0].localeCompare(b[0]));
+// Keys, die rausfliegen sollen
+const EXCLUDE = new Set(['failed', 'rip box']);
+
+// 1) Gefilterte & sortierte Paare [type, count]
+const sortedTypes = [...typeCount.entries()]
+  .filter(([type]) => !EXCLUDE.has(String(type).toLowerCase()))
+  .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+
+
     const sortedRoutes = [...routeCount.entries()].sort((a,b)=> b[1]-a[1] || a[0].localeCompare(b[0]));
+
+    const ONLY = new Set(['failed', 'rip box']);
+
+const failedRip = [...typeCount.entries()]
+  .filter(([type]) => ONLY.has(String(type).toLowerCase()))
+  .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
 
     renderChips(typesWrap, sortedTypes, 'type');
     renderChips(routesWrap, sortedRoutes, 'route');
+    renderChips(specialboxes, failedRip, 'type');
   }
 
   function renderChips(container, entries, kind){
