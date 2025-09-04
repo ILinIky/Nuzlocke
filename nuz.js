@@ -835,19 +835,23 @@ function renderBoxDrawer(){
     card.draggable = true;
     card.dataset.uid = mon.uid;
     card.setAttribute('data-route', mon.routeName);
-    card.innerHTML = `
-      <div class="poke-top">
-        <div>
-          <div class="poke-name">#${mon.id} ${toTitle(mon.name)} ${mon.nickname?`“${mon.nickname}”`:''}</div>
-          <div class="tag">${mon.routeName}</div>
-        </div>
-      </div>
-      <div class="poke-sprite"><img alt="${toTitle(mon.name)}" src="${mon.sprite}"></div>
-      ${mon.isInTeam ? (() => {
-        const placed = placedLabelForRoute(mon.routeName);
-        return `<div class="ribbon">Gepicked von: ${placed ? '  ' + placed : ''}</div>`;
-      })() : ''}
-    `;
+    const placed = placedLabelForRoute(mon.routeName);
+const hasRibbon = !!mon.isInTeam;
+
+
+card.className = `poke-card${hasRibbon ? ' has-ribbon' : ''}`;
+
+card.innerHTML = `
+  ${hasRibbon ? `<div class="ribbon"><span>Gepickt von: ${placed || '—'}</span></div>` : ''}
+  <div class="poke-top">
+    <div>
+      <div class="poke-name">#${mon.id} ${toTitle(mon.name)} ${mon.nickname?`“${mon.nickname}”`:''}</div>
+      <div class="tag">${mon.routeName}</div>
+    </div>
+  </div>
+  <div class="poke-sprite"><img alt="${toTitle(mon.name)}" src="${mon.sprite}"></div>
+`;
+
     card.addEventListener('dragstart', e=>{
      
       card.classList.add('dragging');
@@ -880,7 +884,14 @@ function renderBox(){
     card.dataset.uid = mon.uid;
     card.setAttribute('data-route', mon.routeName);
     //console.error('[NZ] renderBox() - card:', card, 'mon:', mon);
-    card.innerHTML = `
+    const placed = placedLabelForRoute(mon.routeName);
+const hasRibbon = !!mon.isInTeam;
+const typeLabel = Array.isArray(mon.type) ? mon.type.join(' / ') : (mon.type || '');
+
+card.className = `poke-card${hasRibbon ? ' has-ribbon' : ''}`;
+card.innerHTML = `
+  ${hasRibbon ? `<div class="ribbon"><span>Im Team${placed ? ' • ' + placed : ''}</span></div>` : ''}
+
       <div class="poke-top">
         <div>
           <div class="poke-name">#${mon.id} ${toTitle(mon.name)} ${mon.nickname?`“${mon.nickname}”`:''}</div>
@@ -889,7 +900,6 @@ function renderBox(){
         <button class="btn bad" data-remove>Entfernen</button>
       </div>
       <div class="poke-sprite"><img alt="${toTitle(mon.name)}" src="${mon.sprite}"></div>
-      ${mon.isInTeam?`<div class="ribbon">Im Team</div>`:''}
     `;
     card.addEventListener('dragstart', e=>{
       card.classList.add('dragging');

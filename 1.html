@@ -202,8 +202,8 @@ main{ max-width:1200px; margin:18px auto 64px; padding:0 18px }
 @media (max-width:900px){ .sprite, #encSprite{ width:200px; height:200px } }
 
 /* idle drift */
-@keyframes idleFloat{ 0%{transform:translateY(0)} 50%{transform:translateY(-5px)} 100%{transform:translateY(0)} }
-.sprite img, .poke-sprite img, #encSprite img{ animation: idleFloat 5.2s ease-in-out infinite; will-change:transform }
+@keyframes idleFloat{ 10%{transform:translateY(0)} 50%{transform:translateY(-7px)} 100%{transform:translateY(0)} }
+.sprite img, .poke-sprite img, #encSprite img{ animation: idleFloat 4.0s ease-in-out infinite; will-change:transform }
 
 /* Catch Pulse / Fail Flash (CSS-Varianten für schnelle Hooks) */
 .caught-anim{ position:relative }
@@ -254,7 +254,8 @@ input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inse
 /* ======================================
    BOX & TEAM
    ====================================== */
-.box-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap:14px }
+.box-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(240px,1fr)); gap:14px }
+.box-grid2{ display:grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap:14px }
 .poke-card{
   position:relative; border:1px solid rgba(255,255,255,.12); border-radius:16px;
   background:linear-gradient(180deg,#0d1a3f,#0b1430); padding:10px; display:grid; gap:8px; cursor:grab;
@@ -262,11 +263,7 @@ input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inse
 }
 .poke-card:hover{ transform:translateY(-2px); box-shadow:0 14px 40px rgba(0,0,0,.48) }
 .poke-card.dragging{ opacity:.6 }
-.poke-card::after{
-  content:""; position:absolute; inset:-40% -80%; pointer-events:none; border-radius:20px;
-  background: linear-gradient(75deg, transparent 40%, rgba(255,255,255,.18) 50%, transparent 60%);
-  transform: translateX(-60%) rotate(10deg); opacity:0; transition: transform .9s ease, opacity .25s ease;
-}
+
 .poke-card:hover::after{ transform: translateX(60%) rotate(10deg); opacity:.65 }
 
 .poke-top{ display:flex; justify-content:space-between; align-items:center }
@@ -281,10 +278,101 @@ input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inse
 }
 .poke-sprite img{ max-width:88%; max-height:88%; image-rendering: pixelated }
 
+/* Karte erlaubt Overlay */
+.poke-card { position: relative; overflow: visible; }
+
+/* Wenn eine Ribbon drauf ist, oben etwas Platz schaffen */
+.poke-card.has-ribbon { --ribbon-h: 28px; padding-top: calc(var(--ribbon-h) + 6px); }
+
+/* Neues Ribbon */
 .ribbon{
-  position:absolute; top:8px; left:-6px; background:var(--pk-yellow); color:#111; padding:3px 10px;
-  border-radius:6px; font-size:11px; font-weight:900; box-shadow:0 2px 10px rgba(0,0,0,.3)
+  position: absolute;
+  top: 6px;          /* leicht nach innen */
+  left: -6px;        /* hängt über den Rand */
+  z-index: 3;
+  padding: 6px 12px 6px 16px;
+  border-radius: 10px 12px 12px 0;
+  font: 900 11px/1.15 Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  letter-spacing: .2px;
+  color: #0b1433;
+  background: linear-gradient(90deg, var(--ring, #ffd23f), var(--ok, #31d0aa));
+  box-shadow:
+    0 10px 24px rgba(0,0,0,.30),
+    0 0 0 1px rgba(255,255,255,.10) inset;
+  text-shadow: 0 1px 0 rgba(255,255,255,.35);
+  pointer-events: none;   /* UI darunter bleibt klickbar */
+  transform: translateZ(0); /* crisp anims */
 }
+
+/* Falt-Zipfel */
+.ribbon::before{
+  content:"";
+  position: absolute;
+  left: 0; top: 100%;
+  width: 0; height: 0;
+  border-left: 6px solid transparent;
+  border-top: 6px solid rgba(0,0,0,.18); /* Schattenkante */
+  filter: saturate(80%);
+}
+
+/* kleine Nadel (Deko) */
+.ribbon::after{
+  content:"";
+  position:absolute;
+  left: 6px; top: 50%;
+  width: 6px; height: 6px; border-radius: 50%;
+  transform: translateY(-50%);
+  background: #fff;
+  box-shadow:
+    0 0 0 2px rgba(0,0,0,.2),
+    0 0 0 1px rgba(255,255,255,.5) inset;
+  opacity: .9;
+}
+
+/* dezenter Glanzschimmer */
+.ribbon > span{
+  position: relative;
+  display: inline-block;
+}
+.ribbon > span::after{
+  content:"";
+  position:absolute;
+  inset:-2px -6px;
+  background: linear-gradient(120deg,
+    rgba(255,255,255,.0) 0%,
+    rgba(255,255,255,.25) 35%,
+    rgba(255,255,255,.0) 70%);
+  mix-blend-mode: screen;
+  opacity: .25;
+  transform: translateX(-120%);
+  animation: ribbonSheen 3.2s ease-in-out infinite;
+}
+
+/* alternative Position rechts oben (falls gewünscht) */
+.ribbon--right{
+  left: auto; right: -6px;
+  border-radius: 12px 10px 0 12px;
+}
+.ribbon--right::before{
+  left: auto; right: 0;
+  border-left: none;
+  border-right: 6px solid transparent;
+  border-top: 6px solid rgba(0,0,0,.18);
+}
+
+@keyframes ribbonSheen {
+  0%   { transform: translateX(-120%) }
+  55%  { transform: translateX(0%) }
+  100% { transform: translateX(120%) }
+}
+
+/* Reduce motion -> kein Schimmer */
+@media (prefers-reduced-motion: reduce){
+  .ribbon > span::after { animation: none }
+}
+
+
+
 
 /* Team */
 .team-wrap{ display:grid; grid-template-columns: repeat(6, 1fr); gap:12px }
@@ -602,7 +690,7 @@ input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inse
      
         
         
-        <div class="box-grid" id="boxDrawer"></div>
+        <div class="box-grid2" style="margin-top: 20px" id="boxDrawer"></div>
       </div>
 
       <div class="card" style="margin-top:12px">
