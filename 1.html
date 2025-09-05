@@ -15,6 +15,7 @@
   <link rel="stylesheet" type="text/css" href="arena.css">
   <link rel="stylesheet" type="text/css" href="roles.css">
   <link rel="stylesheet" href="loader.css">
+  <link rel="stylesheet" href="mini.css">
   <script src="loader.js"></script>
 <script>
   // Anzeigen
@@ -372,6 +373,88 @@ input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inse
 }
 
 
+/* BARS */
+:root{
+  --pk-ring: var(--ring, #ffd23f);
+  --pk-accent: var(--ok, #31d0aa);
+}
+
+/* Bar */
+.box-viewer-bar { display:flex; align-items:center; margin:.5rem 0 .75rem }
+.box-viewer-row { display:flex; gap:.6rem; align-items:center; flex-wrap:wrap }
+.box-viewer-bar .lbl { opacity:.9; font-weight:900; letter-spacing:.2px }
+
+/* Pokémon-Select */
+.pk-select{
+  position: relative;
+  display: inline-block;
+  isolation: isolate;
+}
+.pk-select select{
+  -webkit-appearance: none;
+  appearance: none;
+  padding: 10px 44px 10px 44px;           /* Platz für Ball & Chevron */
+  min-width: 220px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.18);
+  color: #e8ecff;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+  box-shadow:
+    0 8px 22px rgba(0,0,0,.35),
+    inset 0 0 0 0 var(--pk-ring);
+  outline: none;
+  font-weight: 900;
+  letter-spacing: .2px;
+  transition: box-shadow .18s ease, transform .12s ease, border-color .18s ease;
+}
+.pk-select:hover select{ transform: translateY(-1px) }
+.pk-select select:focus{
+  box-shadow:
+    0 10px 28px rgba(0,0,0,.38),
+    inset 0 0 0 2px var(--pk-ring),
+    0 0 0 3px rgba(255,210,63,.10);
+  border-color: rgba(255,255,255,.28);
+}
+
+/* Pokéball links im Feld */
+.pk-select::before{
+  content:"";
+  position:absolute; left:12px; top:50%; transform:translateY(-50%);
+  width:18px; height:18px; border-radius:50%;
+  background:
+    radial-gradient(circle at 50% 35%, #EE1515 0 36%, #fff 37% 64%, #111 65% 100%);
+  box-shadow: 0 0 0 1px #fff inset, 0 0 0 2px #EE1515 inset, 0 6px 12px rgba(0,0,0,.35);
+  pointer-events:none; z-index:1;
+  animation: pkBallFloat 3s ease-in-out infinite;
+}
+@keyframes pkBallFloat{ 50%{ transform:translateY(calc(-50% - 1px)) } }
+
+/* Chevron rechts */
+.pk-select::after{
+  content:"";
+  position:absolute; right:14px; top:50%; transform:translateY(-50%) rotate(45deg);
+  width:10px; height:10px;
+  border-right: 2px solid rgba(255,255,255,.85);
+  border-bottom:2px solid rgba(255,255,255,.85);
+  opacity:.9; pointer-events:none;
+}
+
+/* Optional: Refresh-Button im gleichen Look */
+.btn.ghost{
+  border:1px solid rgba(255,255,255,.22);
+  background:#0c1330;
+  color:#e8ecff;
+  padding:10px 14px;
+  border-radius:12px;
+  box-shadow:0 6px 20px rgba(0,0,0,.28);
+  font-weight:800; letter-spacing:.2px;
+  transition: transform .12s ease, box-shadow .18s ease;
+}
+.btn.ghost:hover{ transform:translateY(-1px) }
+.btn.ghost:active{ transform:translateY(0); box-shadow:0 4px 12px rgba(0,0,0,.26) }
+
+
 
 
 /* Team */
@@ -662,10 +745,10 @@ input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inse
 
 
       <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:10px">
-        <h3 style="margin:0">Pokémon Box</h3>
+        <h3 style="margin:0; display:none">Pokémon Box</h3>
         <div class="row">
-          <button class="btn warn" id="exportBtn">Daten exportieren</button>
-          <label class="btn" for="importFile">Daten importieren</label>
+          <button class="btn warn" style="display:none" id="exportBtn">Daten exportieren</button>
+          <label class="btn" style="display:none" for="importFile">Daten importieren</label>
           <input id="importFile" type="file" accept="application/json" style="display:none" />
         </div>
       </div>
@@ -853,6 +936,7 @@ input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inse
   <script src="control-api2.js"></script>
   <script src="hotkeys.js"></script>
   <script src="stable-player-id.js"></script>
+  <script src="mini.js"></script>
   
  
 <script>document.addEventListener('DOMContentLoaded', ()=> LoginFX.init());</script>

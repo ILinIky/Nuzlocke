@@ -1,6 +1,25 @@
 import { neon } from "@netlify/neon";
 const sql = neon();
 
+// ===== tiny color logger for Node =====
+const C = {
+  reset:  '\x1b[0m',  bold: '\x1b[1m', dim:  '\x1b[2m',
+  red:    '\x1b[31m', green:'\x1b[32m', yellow:'\x1b[33m',
+  blue:   '\x1b[34m', magenta:'\x1b[35m', cyan:'\x1b[36m', gray:'\x1b[90m'
+};
+const tty = () => process.stdout?.isTTY || process.env.FORCE_COLOR;
+
+function paint(s, color){ return tty() ? `${color}${s}${C.reset}` : String(s); }
+
+export const log = {
+  info:  (...a) => console.log(paint('[INFO]', C.cyan),   ...a),
+  ok:    (...a) => console.log(paint('✔',       C.green),  ...a),
+  warn:  (...a) => console.warn(paint('[WARN]', C.yellow), ...a),
+  error: (...a) => console.error(paint('[ERR]', C.red),    ...a),
+  step:  (t)    => console.log(paint(`» ${t}`,  C.magenta)),
+};
+
+
 const json = (obj, status = 200) =>
   new Response(JSON.stringify(obj), {
     status,
@@ -113,6 +132,8 @@ try {
 }
 
 async function ensureTables() {
+  return;
+  log.info('Ensuring tables...');
 
 
   //setup();
@@ -424,8 +445,9 @@ async function unbanPlayer({ code, pid, targetId }) {
 
 
 
-// -------- Read State --------
+// -------- Read State -------- START
 async function listState({ code,pid }){
+  console.info("List State for",code,pid);
   const cd = normCode((code ?? "").toString());
 
   if (!cd) return { code: "", players: [], routeSlots: [], boxes: {}, now: nowIso() };
@@ -448,7 +470,7 @@ async function listState({ code,pid }){
   const pokemons = await sql`SELECT route, species, nickname,caught FROM pokemons WHERE code=${cd} and player_id=${pid}`;
 
   const rows = await sql/*sql*/`
-    SELECT po.player_id, po.route, po.species, po.caught
+    SELECT po.player_id, po.route, po.species, po.caught,po.nickname
     FROM pokemons po
     WHERE po.player_id IN (SELECT player_id FROM lobby_members WHERE code=${cd})
       AND po.code = ${cd}
@@ -456,7 +478,7 @@ async function listState({ code,pid }){
   const boxes = {};
   for (const r of rows) {
     boxes[r.player_id] ??= {};
-    boxes[r.player_id][r.route] = { species: r.species, caught: r.caught };
+    boxes[r.player_id][r.route] = { species: r.species, caught: r.caught,nickname: r.nickname };
   }
 
   const hostRow = await sql`SELECT host_id FROM lobbies WHERE code=${cd}`;
@@ -475,6 +497,7 @@ async function listRoutes({ code }) {
   `;
   return { routes: rows };
 }
+// -------- Read State -------- END
 
 // --- Neu: Useable-Check ---
 async function useable({ name, code, route }) {
@@ -521,6 +544,7 @@ async function useable({ name, code, route }) {
   const usable = rows.length > 0 && offenders.length === 0;
   return { usable, count: rows.length, players: offenders };
 }
+// End useable check
 
 
 export default async (req) => {
