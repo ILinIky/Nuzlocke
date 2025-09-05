@@ -1441,96 +1441,101 @@ boot();
    SETTINGS==========================================SETTINGS --> START
    ========================================================== */
 const NZ_API = "/api/nuzlocke";
-
-// --- adaptive-polling.js (inline) -------------------------------------------
+function holdSync(ms = 2500){ nzLocalHoldUntil = Date.now() + ms; }
+// --- Kompatibilität: NZ_POLL_MS & NZ_HEARTBEAT_MS ohne Reihenfolge-Probleme ---
 (function(){
-  // Empfehlungen / Defaults
-  const NZ_HEARTBEAT_FG = 30000;  // 30s im Vordergrund
-  const NZ_HEARTBEAT_BG = 90000;  // 90s im Hintergrund
+  // Fallback-Startwerte
+  const F_POLL = 10000, F_HB = 30000;
 
-  const NZ_POLL_BASE    = 10000;  // 10s normal
-  const NZ_POLL_FAST    = 2500;   // 2.5s bei Aktivität
-  const NZ_POLL_BG      = 30000;  // 30s im Hintergrund
-  const NZ_POLL_ERR_MAX = 120000; // bis 120s bei Fehlern
+  // Falls schon irgendwo gelesen wird:
+  if (typeof window.NZ_POLL_MS === 'undefined') window.NZ_POLL_MS = F_POLL;
+  if (typeof window.NZ_HEARTBEAT_MS === 'undefined') window.NZ_HEARTBEAT_MS = F_HB;
 
-  let _pollTimer = null;
-  let _hbTimer   = null;
-  let _backoff   = NZ_POLL_BASE;
-  let _fastUntil = 0;
+  function compute(){
+    // Nutzt deine neuen Konstanten, falls vorhanden – sonst Fallbacks
+    const fastUntil = (typeof window._fastUntil !== 'undefined') ? window._fastUntil : 0;
+    const hidden    = (document.visibilityState === 'hidden');
+    const base      = (typeof window.NZ_POLL_BASE !== 'undefined') ? window.NZ_POLL_BASE : F_POLL;
+    const fast      = (typeof window.NZ_POLL_FAST !== 'undefined') ? window.NZ_POLL_FAST : 2500;
+    const bg        = (typeof window.NZ_POLL_BG   !== 'undefined') ? window.NZ_POLL_BG   : 30000;
+    const hbFG      = (typeof window.NZ_HEARTBEAT_FG !== 'undefined') ? window.NZ_HEARTBEAT_FG : F_HB;
+    const hbBG      = (typeof window.NZ_HEARTBEAT_BG !== 'undefined') ? window.NZ_HEARTBEAT_BG : 90000;
 
-  function onVisibility(){
-    if (document.visibilityState === 'hidden'){
-      schedulePoll(NZ_POLL_BG);
-      scheduleHeartbeat();
-    } else {
-      schedulePoll(NZ_POLL_FAST);
-      scheduleHeartbeat();
+    const poll = (Date.now() < fastUntil) ? fast : (hidden ? bg : base);
+    const hb   = hidden ? hbBG : hbFG;
+    return { poll, hb };
+  }
+  function refresh(){
+    const { poll, hb } = compute();
+    window.NZ_POLL_MS = poll;
+    window.NZ_HEARTBEAT_MS = hb;
+  }
+
+  // Dynamische Getter (optional – macht NZ_POLL_MS/NZ_HEARTBEAT_MS immer “live”)
+  try {
+    Object.defineProperty(window, 'NZ_POLL_MS', { get(){ return compute().poll; }, configurable:true });
+    Object.defineProperty(window, 'NZ_HEARTBEAT_MS', { get(){ return compute().hb; }, configurable:true });
+  } catch(_) {}
+
+  // Sicheres “Wiring”: nur wrappen, wenn die Funktion existiert
+  function wire(){
+    // schedulePoll
+    if (typeof window.schedulePoll === 'function' && !window.__shimWrapped_schedulePoll){
+      const _orig = window.schedulePoll;
+      window.schedulePoll = function(ms){ refresh(); return _orig(ms); };
+      window.__shimWrapped_schedulePoll = true;
     }
-  }
-
-  function scheduleHeartbeat(){
-    clearInterval(_hbTimer);
-    const hidden = document.visibilityState === 'hidden';
-    const period = hidden ? NZ_HEARTBEAT_BG : NZ_HEARTBEAT_FG;
-    _hbTimer = setInterval(()=> nzHeartbeat().catch(()=>{}), period);
-  }
-
-  function schedulePoll(ms){
-    clearTimeout(_pollTimer);
-    _pollTimer = setTimeout(runPoll, Math.max(0, ms));
-  }
-
-  async function runPoll(){
-    try{
-      await nzSync();                    // deine bestehende Sync-Funktion
-      _backoff = NZ_POLL_BASE;           // Backoff zurücksetzen
-      const now = Date.now();
-      const hidden = document.visibilityState === 'hidden';
-      const next = (now < _fastUntil) ? NZ_POLL_FAST : (hidden ? NZ_POLL_BG : NZ_POLL_BASE);
-      schedulePoll(next);
-    }catch(e){
-      // Exponentielles Backoff bei Fehlern
-      _backoff = Math.min(_backoff * 1.8, NZ_POLL_ERR_MAX);
-      schedulePoll(_backoff);
+    // runPoll
+    if (typeof window.runPoll === 'function' && !window.__shimWrapped_runPoll){
+      const _orig = window.runPoll;
+      window.runPoll = async function(){ try { return await _orig(); } finally { refresh(); } };
+      window.__shimWrapped_runPoll = true;
     }
+    // scheduleHeartbeat
+    if (typeof window.scheduleHeartbeat === 'function' && !window.__shimWrapped_scheduleHeartbeat){
+      const _orig = window.scheduleHeartbeat;
+      window.scheduleHeartbeat = function(){ const r=_orig(); refresh(); return r; };
+      window.__shimWrapped_scheduleHeartbeat = true;
+    }
+    // bumpFastPolling
+    if (typeof window.bumpFastPolling === 'function' && !window.__shimWrapped_bumpFast){
+      const _orig = window.bumpFastPolling;
+      window.bumpFastPolling = function(d=15000){ _orig(d); refresh(); };
+      window.__shimWrapped_bumpFast = true;
+    }
+
+    // Änderungen durch Sichtbarkeit/Netz sofort spiegeln
+    document.addEventListener('visibilitychange', refresh);
+    window.addEventListener('focus',  refresh);
+    window.addEventListener('online', refresh);
+    window.addEventListener('offline',refresh);
+
+    refresh();
   }
 
-  function startAdaptivePolling(){
-    stopAdaptivePolling();
-    schedulePoll(0);
-    scheduleHeartbeat();
-    document.addEventListener('visibilitychange', onVisibility);
-    window.addEventListener('focus',  ()=> schedulePoll(NZ_POLL_FAST));
-    window.addEventListener('online', ()=> schedulePoll(NZ_POLL_FAST));
-    window.addEventListener('offline',()=> schedulePoll(NZ_POLL_BG));
+  // Falls startAdaptivePolling existiert, nach dessen Start verkabeln
+  if (typeof window.startAdaptivePolling === 'function' && !window.__shimWrapped_start){
+    const _origStart = window.startAdaptivePolling;
+    window.startAdaptivePolling = function(){
+      const r = _origStart.apply(this, arguments);
+      wire();
+      return r;
+    };
+    window.__shimWrapped_start = true;
+  } else {
+    // Sonst später versuchen (wenn dein Code geladen ist)
+    document.addEventListener('DOMContentLoaded', wire, { once:true });
+    // und zusätzlich ein kurzes Retry-Fenster
+    let tries = 0;
+    const t = setInterval(()=>{
+      tries++;
+      if (tries>20){ clearInterval(t); return; }
+      if (typeof window.schedulePoll === 'function' || typeof window.startAdaptivePolling === 'function'){
+        clearInterval(t); wire();
+      }
+    }, 100);
   }
-
-  function stopAdaptivePolling(){
-    clearTimeout(_pollTimer); _pollTimer = null;
-    clearInterval(_hbTimer);  _hbTimer  = null;
-    document.removeEventListener('visibilitychange', onVisibility);
-  }
-
-  function bumpFastPolling(durationMs = 15000){
-    _fastUntil = Date.now() + durationMs;
-    schedulePoll(NZ_POLL_FAST);
-  }
-
-  // --- Export ins Global-Scope ---
-  window.startAdaptivePolling = startAdaptivePolling;
-  window.stopAdaptivePolling  = stopAdaptivePolling;
-  window.bumpFastPolling      = bumpFastPolling;
-
-  // Back-Compat für bestehenden Code, der diese Konstanten noch liest:
-  window.NZ_POLL_MS       = NZ_POLL_BASE;
-  window.NZ_HEARTBEAT_MS  = NZ_HEARTBEAT_FG;
-
-  // Ready-Event (optional)
-  document.dispatchEvent(new CustomEvent('nz:poll-ready'));
 })();
-startAdaptivePolling();
-window.bumpFastPolling?.(30000);
-
 
 
 /* ========================================================== 
@@ -2188,8 +2193,8 @@ async function nzSync(){
     console.error("[NZ] sync failed:", e);
   }
 }
-//setInterval(nzHeartbeat, NZ_HEARTBEAT_MS);
-//setInterval(nzSync, NZ_POLL_MS);
+// setInterval(nzHeartbeat, NZ_HEARTBEAT_MS);
+// setInterval(nzSync, NZ_POLL_MS);
 
 // --- Auto-Join bei ?code= ---
 (async()=>{
