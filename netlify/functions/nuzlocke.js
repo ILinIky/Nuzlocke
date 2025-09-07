@@ -1,6 +1,8 @@
 import { neon } from "@netlify/neon";
 const sql = neon();
 
+
+
 // ===== tiny color logger for Node =====
 const C = {
   reset:  '\x1b[0m',  bold: '\x1b[1m', dim:  '\x1b[2m',
@@ -126,17 +128,39 @@ try {
   `;
   await sql`ALTER TABLE pokemons ALTER COLUMN caught SET DEFAULT 'caught'`;
   await sql`ALTER TABLE pokemons ALTER COLUMN caught SET NOT NULL`;
+
+  //index
+  await sql`create index if not exists pokemons_player_updated_idx on pokemons(player_id, updated_at desc)`;
+await sql`create index if not exists players_lobby_updated_idx  on players(lobby_id, updated_at desc)`;
+
+
+await sql`create index if not exists pokemons_player_route_idx on pokemons(player_id, route)`;
+await sql`create index if not exists players_lobby_idx on players(lobby_id)`;
+
+
+await sql`create index if not exists pokemons_code_idx on pokemons(code)`;
+
+await sql`ALTER TABLE lobby_members ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now()`;
+await sql`ALTER TABLE pokemons      ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now()`;
+await sql`ALTER TABLE players       ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now()`;
+
+await sql`CREATE INDEX IF NOT EXISTS lobby_members_code_updated_idx ON lobby_members(code, updated_at)`;
+await sql`CREATE INDEX IF NOT EXISTS pokemons_code_updated_idx      ON pokemons(code, updated_at)`;
+await sql`CREATE INDEX IF NOT EXISTS pokemons_code_player_idx       ON pokemons(code, player_id)`;
+await sql`CREATE INDEX IF NOT EXISTS route_slots_code_idx           ON route_slots(code)`;
+
 } catch (_) {
   // schon migriert oder in Benutzung – sicher ignorieren
 }
 }
 
 async function ensureTables() {
-  return;
+return;
   log.info('Ensuring tables...');
 
 
   //setup();
+  //log.info('SETUP done.');
   //console.log("Ensuring tables...");
   // Basis-Tabellen
  
@@ -446,46 +470,120 @@ async function unbanPlayer({ code, pid, targetId }) {
 
 
 // -------- Read State -------- START
-async function listState({ code,pid }){
-  console.info("List State for",code,pid);
+
+// -------- Read State (1 Roundtrip, gleicher Return-Shape) --------
+async function listState({ code, pid }) {
+  console.info("List State for", code, pid);
   const cd = normCode((code ?? "").toString());
 
-  if (!cd) return { code: "", players: [], routeSlots: [], boxes: {}, now: nowIso() };
+  if (!cd) return { code: "", players: [], routeSlots: [], pokemons: [], boxes: {}, now: nowIso() };
 
-  //await sql`INSERT INTO lobbies(code) VALUES(${cd}) ON CONFLICT(code) DO NOTHING`;
+  const [row] = await sql/*sql*/`
+    WITH members AS (
+      SELECT p.id, p.name,
+             (lm.last_seen > now() - interval '45 seconds') AS online,
+             COALESCE(lm.role,'player') AS role,
+             COALESCE(lm.banned,false)  AS banned
+      FROM lobby_members lm
+      JOIN players p ON p.id = lm.player_id
+      WHERE lm.code = ${cd}
+    ),
+    rs AS (
+      SELECT route, slot, player_id
+      FROM route_slots
+      WHERE code = ${cd}
+    ),
+    box AS (
+      SELECT po.player_id, po.route, po.species, po.caught, po.nickname
+      FROM pokemons po
+      WHERE po.code = ${cd}
+        AND po.player_id IN (SELECT id FROM members)
+    ),
+    mypoke AS (
+      SELECT route, species, nickname, caught
+      FROM pokemons
+      WHERE code=${cd} AND player_id=${pid}
+    ),
+    host AS (
+      SELECT host_id FROM lobbies WHERE code=${cd}
+    )
+    SELECT
+      /* players[] */
+      (
+        SELECT COALESCE(
+          json_agg(json_build_object(
+            'id', m.id,
+            'name', m.name,
+            'online', m.online,
+            'role', m.role,
+            'banned', m.banned
+          ) ORDER BY m.name),
+          '[]'::json
+        )
+        FROM (SELECT * FROM members ORDER BY name) m
+      ) AS players,
 
-  const members = await sql/*sql*/`
-    SELECT p.id, p.name,
-           (m.last_seen > now() - interval '45 seconds') AS online,
-           COALESCE(m.role,'player') AS role,
-           COALESCE(m.banned,false)  AS banned
-    FROM lobby_members m
-    JOIN players p ON p.id = m.player_id
-    WHERE m.code = ${cd}
-    ORDER BY p.name
+      /* routeSlots[] */
+      (
+        SELECT COALESCE(
+          json_agg(json_build_object(
+            'route', r.route,
+            'slot',  r.slot,
+            'player_id', r.player_id
+          ) ORDER BY r.slot, r.route, r.player_id),
+          '[]'::json
+        )
+        FROM rs r
+      ) AS route_slots,
+
+      /* boxes{}  ->  { player_id: { route: {species,caught,nickname}, ... }, ... } */
+      (
+        SELECT COALESCE(
+          (
+            SELECT json_object_agg(b.player_id, b.routes)
+            FROM (
+              SELECT player_id,
+                     json_object_agg(route, json_build_object(
+                       'species', species,
+                       'caught',  caught,
+                       'nickname', nickname
+                     )) AS routes
+              FROM box
+              GROUP BY player_id
+            ) b
+          ),
+          '{}'::json
+        )
+      ) AS boxes,
+
+      /* hostId */
+      (SELECT host_id FROM host) AS host_id,
+
+      /* pokemons[] (eigene) */
+      (
+        SELECT COALESCE(
+          json_agg(json_build_object(
+            'route', route,
+            'species', species,
+            'nickname', nickname,
+            'caught', caught
+          ) ORDER BY route),
+          '[]'::json
+        )
+        FROM mypoke
+      ) AS pokemons
   `;
 
-  const routeSlots = await sql`SELECT route, slot, player_id FROM route_slots WHERE code=${cd}`;
+  const players    = row?.players     ?? [];
+  const routeSlots = row?.route_slots ?? [];
+  const boxes      = row?.boxes       ?? {};
+  const hostId     = row?.host_id     ?? null;
+  const pokemons   = row?.pokemons    ?? [];
 
-  const pokemons = await sql`SELECT route, species, nickname,caught FROM pokemons WHERE code=${cd} and player_id=${pid}`;
-
-  const rows = await sql/*sql*/`
-    SELECT po.player_id, po.route, po.species, po.caught,po.nickname
-    FROM pokemons po
-    WHERE po.player_id IN (SELECT player_id FROM lobby_members WHERE code=${cd})
-      AND po.code = ${cd}
-  `;
-  const boxes = {};
-  for (const r of rows) {
-    boxes[r.player_id] ??= {};
-    boxes[r.player_id][r.route] = { species: r.species, caught: r.caught,nickname: r.nickname };
-  }
-
-  const hostRow = await sql`SELECT host_id FROM lobbies WHERE code=${cd}`;
-  const hostId  = hostRow?.[0]?.host_id || null;
-
-  return { code: cd, hostId, players: members, routeSlots, pokemons, boxes, now: nowIso() };
+  return { code: cd, hostId, players, routeSlots, pokemons, boxes, now: nowIso() };
 }
+
+
 
 async function listRoutes({ code }) {
   const cd = normCode(must(code, 'code'));

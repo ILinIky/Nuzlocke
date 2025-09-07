@@ -16,6 +16,7 @@
   <link rel="stylesheet" type="text/css" href="roles.css">
   <link rel="stylesheet" href="loader.css">
   <link rel="stylesheet" href="mini.css">
+  <link rel="stylesheet" href="pokemon-select.css">
   <script src="loader.js"></script>
 <script>
   // Anzeigen
@@ -667,6 +668,75 @@ input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inse
   .login-card, .login-card.is-in, .login-card::before, .login-ticker .track{ transition:none; animation:none }
 }
 
+/* KLEINER TAG AN DER BOX GEFANGEN - FAILED - RIB BOX */
+/* Unterzeile unter dem Namen: Route links, Status rechts */
+.top-subrow{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-top:4px;
+}
+
+/* Route/Typ darf kürzen, damit die Pill rechts immer Platz hat */
+.top-subrow .tag{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+/* Pill jetzt inline statt absolut */
+.poke-card .status-pill{
+  position: static !important; /* überschreibt evtl. alte absolute Regel */
+  top:auto; right:auto;        /* safety */
+  margin-left:auto;            /* schiebt Pill nach rechts */
+  pointer-events:none;         /* blockiert keine Klicks */
+  display:inline-flex; align-items:center; gap:6px;
+  padding: 4px 10px 5px;
+  border-radius:999px;
+  font: 800 11px/1 Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  letter-spacing:.3px; text-transform:uppercase;
+  color:#0b1433;
+  background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(235,241,255,.88));
+
+  box-shadow: 0 6px 16px rgba(0,0,0,.28), 0 0 0 1px rgba(0,0,0,.10) inset;
+}
+
+/* Glanz */
+.poke-card .status-pill::before{
+  content:"";
+  position:absolute; inset:0; border-radius:inherit;
+ ;
+  pointer-events:none;
+}
+
+/* Varianten */
+.poke-card .status-pill.ok{
+  color:#fff;
+  background: linear-gradient(180deg, var(--ok, #2fb07b), #0f3d33);
+  border-color: rgba(0,0,0,.30);
+}
+.poke-card .status-pill.bad{
+  color:#fff;
+  background: linear-gradient(180deg, #ee4545, #a61c1c);
+  border-color: rgba(0,0,0,.30);
+}
+.poke-card .status-pill.dead{
+  color:#fff;
+  background: linear-gradient(180deg, #7d8296, #3a3f53);
+  border-color: rgba(0,0,0,.30);
+}
+
+/* Mini-Pokéball links im Tag */
+.poke-card .status-pill .ball{
+  width:12px; height:12px; flex:0 0 12px; border-radius:50%;
+  box-shadow: 0 0 0 1px #fff inset, 0 0 0 2px #EE1515 inset, 0 2px 5px rgba(0,0,0,.25);
+  background: radial-gradient(circle at 50% 35%, #EE1515 0 36%, #fff 37% 64%, #111 65% 100%);
+  transform: translateY(-.5px);
+}
+
+/* KLEINER TAG AN DER BOX GEFANGEN - FAILED - RIB BOX */
+
 
 
   </style>
@@ -920,7 +990,7 @@ input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inse
       </div>
     </div>
   </section>
-  
+  <script src="pokemon-select.js"></script>
   <script type="module" src="./moves_load.js"></script>
   <script type="module" src="./moves.js"></script>
   <script src="login_plus.js"></script>
@@ -937,6 +1007,7 @@ input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inse
   <script src="hotkeys.js"></script>
   <script src="stable-player-id.js"></script>
   <script src="mini.js"></script>
+
   
  
 <script>document.addEventListener('DOMContentLoaded', ()=> LoginFX.init());</script>

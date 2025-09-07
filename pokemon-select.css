@@ -1,0 +1,93 @@
+/* Pokémon-Style Select (standalone CSS) */
+:root{
+    --ps-bg: #0f1020;
+    --ps-panel: #15162b;
+    --ps-panel-2: #1b1e38;
+    --ps-accent: #ee1515;
+    --ps-accent-2: #3b4cca;
+    --ps-accent-3: #ffcc00;
+    --ps-text: #f2f4ff;
+    --ps-muted: #9aa0b4;
+    --ps-ring: rgba(255, 204, 0, .65);
+    --ps-radius: 16px;
+  }
+
+  #boxViewerSelect.ps-hidden,
+.ps-wrap > select.ps-hidden{
+  position:absolute !important;
+  opacity:0 !important;
+  pointer-events:none !important;
+  width:1px !important; height:1px !important;
+  margin:0 !important; padding:0 !important; border:0 !important;
+}
+
+/* optional: Hide by default, sobald JS aktiv (siehe JS unten) */
+.has-js #boxViewerSelect{
+    position:absolute !important; opacity:0 !important; pointer-events:none !important;
+    width:1px !important; height:1px !important;
+  }
+  
+  .ps-hidden{ position:absolute !important; opacity:0 !important; pointer-events:none !important; width:0 !important; height:0 !important; }
+  .ps-wrap{ position:relative; width:260px; max-width:100%; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; }
+  
+  .ps-trigger{
+    width:100%; display:flex; align-items:center; gap:10px; cursor:pointer; outline:none;
+    background: linear-gradient(180deg, #1b1e38, #14162a);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: var(--ps-radius);
+    padding: 14px 14px 14px 52px;
+    color: var(--ps-text);
+    box-shadow: 0 10px 30px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.03) inset;
+    transition: transform .08s ease, box-shadow .2s ease, border-color .2s ease;
+  }
+  .ps-trigger:hover{ border-color: rgba(255,255,255,.18); }
+  .ps-trigger:focus-visible{ box-shadow: 0 0 0 4px var(--ps-ring), 0 10px 30px rgba(0,0,0,.45); }
+  .ps-trigger[aria-expanded="true"]{ transform: translateY(-1px); }
+  .ps-trigger .ps-label{ flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ps-trigger .ps-placeholder{ color: var(--ps-muted); }
+  .ps-trigger .ps-chev{ width:18px; height:18px; opacity:.9; transition: transform .2s ease; }
+  .ps-trigger[aria-expanded="true"] .ps-chev{ transform: rotate(-180deg); }
+  
+  /* Pokéball */
+  .ps-ball{ position:absolute; left:12px; top:50%; transform: translateY(-50%); width:28px; height:28px; }
+  .ps-ball::before, .ps-ball::after{ content:""; position:absolute; inset:0; border-radius:50%; box-shadow: inset 0 0 0 2px #000; }
+  .ps-ball::before{ background: conic-gradient(from 180deg, var(--ps-accent) 0 180deg, #fff 180deg 360deg); }
+  .ps-ball::after{ height:6px; top:50%; transform: translateY(-50%); background:#000; border-radius:999px; }
+  .ps-ball .ps-btn{ position:absolute; left:50%; top:50%; transform: translate(-50%,-50%); width:12px; height:12px; border-radius:50%; background:#fff; box-shadow: inset 0 0 0 2px #000; }
+  
+  /* Panel */
+  .ps-panel{ position:absolute; left:0; right:0; top: calc(100% + 8px); z-index: 30; opacity:0; pointer-events:none; transform: translateY(-6px) scale(.98);
+    background: linear-gradient(180deg, var(--ps-panel), var(--ps-panel-2));
+    border:1px solid rgba(255,255,255,.08); border-radius: calc(var(--ps-radius) + 2px);
+    box-shadow: 0 20px 40px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.04) inset;
+    transition: opacity .18s ease, transform .18s ease;
+  }
+  .ps-panel.ps-open{ opacity:1; transform: translateY(0) scale(1); pointer-events:auto; }
+  
+  .ps-search{ display:flex; align-items:center; gap:8px; padding: 12px 12px 8px 12px; border-bottom: 1px solid rgba(255,255,255,.06); }
+  .ps-search input{ flex:1; background:#0f1125; color:var(--ps-text); border:1px solid rgba(255,255,255,.08); border-radius: 12px; padding:10px 12px 10px 36px; outline:none; }
+  .ps-search input:focus{ box-shadow: 0 0 0 3px var(--ps-ring); border-color: transparent; }
+  .ps-search .ps-mag{ position:absolute; width:18px; height:18px; margin-left:10px; opacity:.7; }
+  
+  .ps-list{ max-height: 260px; overflow:auto; padding: 6px; }
+  .ps-opt{ display:flex; gap:10px; align-items:center; padding: 10px; border-radius:12px; cursor:pointer; border:1px solid transparent; }
+  .ps-opt:hover{ background: rgba(255,255,255,.06); }
+  .ps-opt[aria-selected="true"], .ps-opt.ps-active{ background: linear-gradient(180deg, rgba(255,204,0,.15), rgba(255,204,0,.08)); border-color: rgba(255,204,0,.2); }
+  
+  .ps-chip{ font-size:12px; padding: 3px 8px; border-radius:999px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); opacity:.95; }
+  
+  /* optional type colors */
+  .ps-type-grass{ background:#78C85022; color:#78C850; }
+  .ps-type-fire{ background:#F0803022; color:#F08030; }
+  .ps-type-water{ background:#6890F022; color:#6890F0; }
+  .ps-type-electric{ background:#F8D03022; color:#F8D030; }
+  .ps-type-psychic{ background:#F8588822; color:#F85888; }
+  .ps-type-ice{ background:#98D8D822; color:#98D8D8; }
+  .ps-type-dragon{ background:#7038F822; color:#7038F8; }
+  .ps-type-dark{ background:#70584822; color:#705848; }
+  .ps-type-fairy{ background:#EE99AC22; color:#EE99AC; }
+  .ps-type-poison{ background:#A040A022; color:#A040A0; }
+  
+  /* Accessibility */
+  .ps-sr{ position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0 }
+  

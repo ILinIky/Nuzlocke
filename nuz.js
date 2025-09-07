@@ -90,8 +90,8 @@ function ensureBoxViewerBar(){
     bar.innerHTML = `
       <div class="box-viewer-row">
         <label class="lbl" style="margin:0">Pokémon Box</label>
-        <div class="pk-select">
-          <select id="boxViewerSelect"></select>
+        <div style="z-index: 999" class="">
+          <select style="display:none" id="boxViewerSelect"></select>
         </div>
         <button id="boxViewerRefresh" class="btn ghost">Aktualisieren</button>
       </div>
@@ -99,7 +99,7 @@ function ensureBoxViewerBar(){
     // oberhalb des Grids einfügen
     grid.parentElement.insertBefore(bar, grid);
   }
-
+ 
   const sel = bar.querySelector('#boxViewerSelect');
   const btn = bar.querySelector('#boxViewerRefresh');
 
@@ -117,7 +117,7 @@ function ensureBoxViewerBar(){
 
     // Optionen neu aufbauen
     sel.innerHTML = '';
-    sel.appendChild(new Option(`Meine Box (${meNm || 'Du'})`, 'me'));
+    sel.appendChild(new Option(`Meine Box (${meNm || 'You'})`, 'me'));
 
     // andere Spieler (ohne mich)
     (Array.isArray(st.players) ? st.players : []).forEach(p => {
@@ -751,8 +751,8 @@ function renderRoutes(){
   
       const status = rt.encounter.status;
       let statusText = 'offen', statusClass = 'pending';
-      if (status === 'caught'){ statusText='gefangen'; statusClass='caught'; }
-      else if (status === 'failed'){ statusText='fehlversuch'; statusClass='failed';}
+      if (status === 'true'){ statusText='gefangen'; statusClass='caught'; }
+      else if (status === 'false'){ statusText='fehlversuch'; statusClass='failed';}
       else if (status === 'dead'){ statusText='DEAD'; statusClass='dead';   
        }
   
@@ -855,13 +855,13 @@ function renderEncounter(){
 // 🎯 Wurf + Fang-Animation
 await RouteFX.epicCatch('#encSprite', rt.name); // ← Animation
     rt.encounter = {
-      status:'caught', pokemonId: chosen.id, pokemonName: chosen.name, sprite: SPRITE(chosen.id), nickname: nick.value.trim(), updatedAt: now()
+      status:'true', pokemonId: chosen.id, pokemonName: chosen.name, sprite: SPRITE(chosen.id), nickname: nick.value.trim(), updatedAt: now()
     };
     const exists = state.box.find(m=>m.routeName===rt.name);
     if(!exists){
       state.box.push({ uid:uid(), id:chosen.id, name:chosen.name, sprite:SPRITE(chosen.id), routeName:rt.name, nickname:nick.value.trim(), caughtAt:now(), isInTeam:false,
       lobbyCode: currentLobbyCode(),
-      type: getTypesByNameFromLocal(chosen.name)   // ⬅️ neu
+      type: getTypesByNameFromLocal(chosen.name)+',ALIVE'    // ⬅️ neu
      });
     }
     save(); renderRoutes(); renderEncounter(); renderBox(); renderBoxDrawer(); renderRouteGroups();
@@ -884,7 +884,7 @@ await RouteFX.epicCatch('#encSprite', rt.name); // ← Animation
     await RouteFX.playFail('#encSprite');
 
     rt.encounter = {
-      status:'failed', pokemonId: chosen.id, pokemonName: chosen.name, sprite: SPRITE(chosen.id), nickname: nick.value.trim(), updatedAt: now()
+      status:'false', pokemonId: chosen.id, pokemonName: chosen.name, sprite: SPRITE(chosen.id), nickname: nick.value.trim(), updatedAt: now()
     };
     const exists = state.box.find(m=>m.routeName===rt.name);
     if(!exists){
@@ -1018,7 +1018,7 @@ function renderBox(){
             <div class="poke-name">#${mon.id} ${toTitle(mon.name)} ${mon.nickname?`“${mon.nickname}”`:''}</div>
             <div class="tag">${mon.routeName} + ${mon.type}</div>
           </div>
-          <button class="btn bad" data-remove>Entfernen</button>
+          <button class="btn bad" style="display:none" data-remove>Entfernen</button>
         </div>
         <div class="poke-sprite"><img alt="${toTitle(mon.name)}" src="${mon.sprite}"></div>
       `;
@@ -1067,13 +1067,14 @@ function renderBox(){
     const species = mon?.species || '';
     const caught  = mon?.caught; // 'true' | 'false'
     //const nickname = mon?.nickname || '';
-    const nick_name = '"'+mon?.nickname+'"' || '';
+    const nick_name = mon?.nickname ? JSON.stringify(mon.nickname) : '';
+// ergibt z.B. "\"Pika\"" bei nickname = 'Pika'
     const sprite  = spriteBySpecies(species);
     const pkmnId  = getPokemonIdByName(species);
     const inTeam  = isRouteInTeamForPlayer(pid, routeName);
     const types   = getTypesByNameFromLocal(species);
     const typeLabel = Array.isArray(types) && types.length ? types.join(',') : '';
-
+    const caught_ = caught === 'true' ? 'alive' : (caught === 'false' ? 'failed' : 'RIP BOX');
     const card = document.createElement('div');
     card.className = 'poke-card read-only';
 
@@ -1083,11 +1084,14 @@ function renderBox(){
       <div class="poke-top">
         <div>
           <div class="poke-name">${pkmnId ? '#'+pkmnId+' ' : ''}${toTitle(species)} ${nick_name}</div>
-          <div class="tag">${routeName}${typeLabel ? ` + ${typeLabel}` : ''}</div>
+          <div class="tag" style="display:none" >${routeName}${typeLabel ? ` + ${typeLabel},${caught_}` : ''}</div>
+           <i class="ball" aria-hidden="true"></i>${caught}
         </div>
-        <div class="status-pill ${caught === 'true' ? 'ok' : 'bad'}">
-          ${caught === 'true' ? 'Gefangen' : 'Nicht gefangen'}
-        </div>
+       <div class="status-pill ${caught === 'true' ? 'ok' : (caught === 'dead' ? 'dead' : 'bad')}">
+  <i class="ball" aria-hidden="true"></i>
+  ${caught === 'true' ? 'ALIVE' : (caught === 'dead' ? 'RIP BOX' : 'FAILED')}
+</div>
+
       </div>
       <div class="poke-sprite">
         ${sprite ? `<img alt="${toTitle(species)}" src="${sprite}">` : '—'}
@@ -1489,8 +1493,11 @@ function holdSync(ms = 2500){ nzLocalHoldUntil = Date.now() + ms; }
       const hidden = document.visibilityState === 'hidden';
       const next = (now < _fastUntil) ? NZ_POLL_FAST : (hidden ? NZ_POLL_BG : NZ_POLL_BASE);
       if( now > _fastUntil){
+        if( fastpull_msg ){
+          PokeBanner.ok(`Schnelles Abfragen beendet.`,1500);
+        }
        fastpull_msg = false;
-       PokeBanner.ok(`Schnelles Abfragen beendet.`,1500);
+       
       }
       schedulePoll(next);
     }catch(e){
@@ -2589,8 +2596,8 @@ async function catchPokemonByName(namePokemon,rt,nickname2,catchstatus)
 {
   console.error(catchstatus);
   let catchaddon = '';
-  if(catchstatus == 'true') {catchstatus = 'caught'; catchaddon = '';}
-  if(catchstatus == 'failed') {catchstatus = 'failed'; catchaddon = ',failed';}
+  if(catchstatus == 'true') {catchstatus = 'true'; catchaddon = ',ALIVE';}
+  if(catchstatus == 'false') {catchstatus = 'false'; catchaddon = ',failed';}
   if(catchstatus == 'dead') {catchstatus = 'dead'; catchaddon = ',RIP BOX';}
   //ID durch Name bekommen
   const id = getPokemonIdByName(namePokemon); 
@@ -2658,6 +2665,7 @@ function checkifpokemonisusable(routeName, st = window.nzLastListState){
     const key = _findRouteKey(routes, routeName);
     if (!key) continue; // kein Eintrag auf dieser Route → ignorieren
     const entry = routes[key];
+    console.warn(entry);
     if (!_isSuccess(entry?.caught)) {
       blockers.push(nameOf(pid));
     }
@@ -2673,7 +2681,7 @@ function checkifpokemonisusable(routeName, st = window.nzLastListState){
 //ROUTES UTILITY LOAD DATA
   
 
-
+PokeSelect.enhance('#boxViewerSelect', { placeholder: 'Box wählen…' });
   
 
   

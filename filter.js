@@ -62,7 +62,7 @@
     // Sort nice: by count desc then name
     //const sortedTypes  = [...typeCount.entries()].sort((a,b)=> b[1]-a[1] || a[0].localeCompare(b[0]));
 // Keys, die rausfliegen sollen
-const EXCLUDE = new Set(['failed', 'rip box']);
+const EXCLUDE = new Set(['failed', 'rip box','alive']);
 
 // 1) Gefilterte & sortierte Paare [type, count]
 const sortedTypes = [...typeCount.entries()]
@@ -72,7 +72,7 @@ const sortedTypes = [...typeCount.entries()]
 
     const sortedRoutes = [...routeCount.entries()].sort((a,b)=> b[1]-a[1] || a[0].localeCompare(b[0]));
 
-    const ONLY = new Set(['failed', 'rip box']);
+    const ONLY = new Set(['failed', 'rip box','alive']);
 
 const failedRip = [...typeCount.entries()]
   .filter(([type]) => ONLY.has(String(type).toLowerCase()))
