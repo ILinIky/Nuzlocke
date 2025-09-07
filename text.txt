@@ -5,3 +5,18 @@ window.nzLastListState --> wichtig
 --> routes
 --> performance
 --> themes fixen
+
+(X) 1. Box verschönern
+(X) 2. Automatisch failed, dead bei anderen
+(X) 3. Frist login fix
+(X) 4. Theme in Einstellungen
+5. Alle alert zu toast
+6. Host automatisch bei Lobbyerstellung
+7. Ban --> message
+8. Alle Routen Erstellen
+9. Route erstellen disablen
+10. Bei import und export playerId
+11. Msg Boxen hinzufügen
+12. Vllt Menu oben besser?
+(X) 13. Scrollbalken bei Routes fixen
+14. TESTEN TESTEN TESTEN

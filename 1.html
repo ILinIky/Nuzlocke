@@ -143,6 +143,7 @@ main{ max-width:1200px; margin:18px auto 64px; padding:0 18px }
    ====================================== */
 .routes-list{ max-height:520px; overflow:auto; padding-right:8px }
 .route-item{
+  overflow: hidden;
   display:flex; justify-content:space-between; align-items:center; gap:10px;
   padding:10px 12px; margin:8px 0; border:1px solid rgba(255,255,255,.14); border-radius:12px;
   background:
@@ -150,6 +151,11 @@ main{ max-width:1200px; margin:18px auto 64px; padding:0 18px }
     radial-gradient(420px 160px at 0% -20%, rgba(255,210,63,.06), transparent 60%);
   cursor:pointer; transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
   position:relative; isolation:isolate; box-shadow:0 8px 22px rgba(0,0,0,.35);
+
+  justify-content: center;      /* Gesamteindruck mittig */
+  align-items: center;
+  text-align: center;
+  padding-block: 14px;          /* etwas mehr Luft oben/unten */
 }
 .route-item:hover{
   transform:translateY(-2px);
@@ -161,22 +167,26 @@ main{ max-width:1200px; margin:18px auto 64px; padding:0 18px }
 .route-item.active{ box-shadow:0 0 0 2px var(--ring) inset, 0 12px 34px rgba(255,210,63,.10) }
 .route-item::after{
   content:""; position:absolute; inset:-30% -60%; border-radius:18px; pointer-events:none;
-  background: linear-gradient(75deg, transparent 40%, rgba(255,255,255,.16) 50%, transparent 60%);
-  transform: translateX(-60%) rotate(10deg); opacity:0;
+ 
   transition: transform .9s ease, opacity .25s ease;
 }
 .route-item:hover::after{ transform: translateX(60%) rotate(10deg); opacity:.7 }
 .route-item .rname{ font-weight:900; letter-spacing:.2px }
 .route-item .chev{ opacity:.45 }
 
-.badge{ padding:2px 8px; border-radius:999px; font-size:12px; font-weight:900; border:1px solid rgba(255,255,255,.18) }
+.badge{ white-space: nowrap; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:900; border:1px solid rgba(255,255,255,.18) }
 .badge.pending{ background:#19203f; color:#c7d2ff }
 .badge.caught{ background:#0a3a31; color:#8af0c9 }
 .badge.failed{ background:#3a1010; color:#da8814 }
 .badge.dead{ background:#3a1010; color:#ff9b9b }
+.badge.failed_by_others{ background:#3a1010; color:#b8c22c }
 
 @keyframes routePop{ 0%{ transform:scale(.98) } 30%{ transform:scale(1.04) } 60%{ transform:scale(.99) } 100%{ transform:scale(1) } }
 .route-item.caught-pop{ animation: routePop .6s ease }
+
+
+
+
 
 /* ======================================
    ENCOUNTER / SPRITES – epische Bühne
@@ -226,6 +236,8 @@ main{ max-width:1200px; margin:18px auto 64px; padding:0 18px }
 }
 .fail-anim::after{ content:""; position:absolute; inset:0; border-radius:12px; background:rgba(255,0,0,.10); animation: failFlash .45s ease-out; pointer-events:none }
 @keyframes failFlash{ from{opacity:.6} to{opacity:0} }
+
+
 
 /* ======================================
    FORM / BUTTONS

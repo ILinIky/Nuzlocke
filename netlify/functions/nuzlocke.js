@@ -325,13 +325,28 @@ async function upsertPokemon({ code, pid, route, species, caught, nickname }){
   // Spectator darf serverseitig nicht schreiben (optional hart absichern)
   const roleRow = await sql`SELECT role FROM lobby_members WHERE code=${cd} AND player_id=${pid}`;
   if (roleRow?.[0]?.role === 'spectator') throw new Error("spectators cannot modify");
+  //console.info("Upsert Pokemon", { code: cd, pid, route: rt, species: sp, caught, nickname });
+  await sql/*sql*/`
+  WITH upserted AS (
+    INSERT INTO pokemons(player_id, route, species, caught, nickname, code)
+    VALUES (${pid}, ${rt}, ${sp}, ${caught}, ${nickname}, ${cd})
+    ON CONFLICT (player_id, route, code)
+    DO UPDATE SET
+      species  = EXCLUDED.species,
+      caught   = EXCLUDED.caught,
+      nickname = COALESCE(EXCLUDED.nickname, pokemons.nickname)
+    RETURNING code, route, player_id, caught
+  )
+  UPDATE pokemons p
+     SET caught = 'false_by_others'
+  FROM upserted u
+  WHERE p.code      = u.code
+    AND p.route     = u.route
+    AND p.player_id <> u.player_id        -- nur die anderen
+    AND u.caught IN ('false','dead')     -- nur wenn der neue Wert fail/dead ist
+    AND p.caught NOT IN ('false','dead') -- unnötige/„Downgrades“ vermeiden
+`;
 
-  await sql`
-    INSERT INTO pokemons(player_id,route,species,caught,nickname,code)
-    VALUES(${pid},${rt},${sp},${caught},${nickname},${cd})
-    ON CONFLICT(player_id,route,code)
-    DO UPDATE SET species=EXCLUDED.species, caught=EXCLUDED.caught, nickname=COALESCE(EXCLUDED.nickname, pokemons.nickname)
-  `;
   return { ok:true };
 }
 
@@ -663,7 +678,7 @@ export default async (req) => {
     let body = {};
     try { body = await req.json(); } catch {}
     const action = body.action || qpAct || "list";
-
+    console.info("Action:", action);
     if (action === "joinLobby")        return json(await joinLobby(body));
     if (action === "createLobby")        return json(await createLobby(body));
     if (action === "rejoinLobby")      return json(await rejoinLobby(body));

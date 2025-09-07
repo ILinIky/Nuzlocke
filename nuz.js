@@ -751,17 +751,20 @@ function renderRoutes(){
   
       const status = rt.encounter.status;
       let statusText = 'offen', statusClass = 'pending';
-      if (status === 'true'){ statusText='gefangen'; statusClass='caught'; }
-      else if (status === 'false'){ statusText='fehlversuch'; statusClass='failed';}
-      else if (status === 'dead'){ statusText='DEAD'; statusClass='dead';   
+      if (status === 'true'){ statusText='CATCHED'; statusClass='caught'; }
+      else if (status === 'false'){ statusText='NOT CATCHED'; statusClass='failed';}
+      else if (status === 'dead'){ statusText='DEAD'; statusClass='dead'; } 
+      else if (status === 'false_by_others'){ statusText='KILLED BY SOMEONE'; statusClass='failed_by_others';   
        }
   
       div.innerHTML = `
-        <div class="left">
-          <span class="rname">${rt.name}</span>
-          <span class="badge ${statusClass}">${statusText}</span>
-        </div>
-        <div class="chev">›</div>
+       <div class="route-item>
+  <div class="left">
+    <span class="rname">${rt.name}</span>
+    <span class="badge ${statusClass}">${statusText}</span>
+  </div>
+  <div class="chev">›</div>
+</div>
       `;
       div.onclick = ()=>{ currentRouteId = rt.id; renderRoutes(); renderEncounter(); };
       wrap.appendChild(div);
@@ -790,9 +793,9 @@ function renderEncounter(){
               <input id="nickname" type="text" placeholder="Spitzname (optional)" value="${e.nickname||''}">
             </div>
             <div class="row" style="margin-top:10px">
-              <button class="btn ok" id="btnCaught">Gefangen</button>
-              <button class="btn warn" id="btnFailed">Fehlversuch</button>
-              <button class="btn bad" id="btnDead">Dead</button>
+              <button class="btn ok" id="btnCaught">CATCHED</button>
+              <button class="btn warn" id="btnFailed">NOT CATCHED</button>
+              <button class="btn bad" id="btnDead">DEAD</button>
               <button class="btn" id="btnClear">Zurücksetzen</button>
             </div>
           </div>
@@ -1716,6 +1719,7 @@ document.getElementById('themeBtn')?.addEventListener('click', async ()=>{
       document.documentElement.style.setProperty('--ok', b);
       localStorage.setItem('nuz_theme_type', pick.type);
       localStorage.setItem('nuz_theme_colors', JSON.stringify(pick.colors));
+     
     }
   });
 
@@ -1896,7 +1900,7 @@ renameBtn?.addEventListener('click', openNameDialog);
       await nzSync();
       setTimeout(() =>  PokeLoader.hide(), 1);
       setTimeout(() =>   PokeBanner.ok(`Lobby ${nzLobbyCode} erfolgreich beigetreten`), 500);
-      setTimeout(() =>   nzSyncBox(), 1000); // BoxDrawer initialisieren
+      setTimeout(() =>   nzSyncBox(true), 1500); // BoxDrawer initialisieren
     }
 
   
@@ -2197,6 +2201,7 @@ async function nzSync(){
     nzRenderLobby(st);
     nzRenderAllTeams(st);
     nzApplyGlobalToLocal(st);
+    nzSyncBox();
   } catch(e) {
     console.error("[NZ] sync failed:", e);
   }
@@ -2221,6 +2226,8 @@ async function nzSync(){
 // --- Öffentliche Hooks ---
 window.NZ = {
   async ensureJoined(){
+    return; // Brauch man das überhaupt noch?
+    console.error("[NZ] ensureJoined");
     if (!nzLobbyCode) {
       const urlCode = (new URL(location.href)).searchParams.get("code");
       if (urlCode) { nzLobbyCode = urlCode.toUpperCase(); localStorage.setItem("lobbyCode", nzLobbyCode); }
@@ -2239,6 +2246,7 @@ window.NZ = {
       return;
     }
     if (nzLobbyCode) {
+      console.error("[NZ] ensureJoined: rejoinLobby");
       try { await nzApi("rejoinLobby", { pid: nzPlayerId, name: (nzPlayerName || state?.user?.name || "Spieler"), code: nzLobbyCode }); } catch(_) {}
     }
   },
@@ -2599,6 +2607,7 @@ async function catchPokemonByName(namePokemon,rt,nickname2,catchstatus)
   if(catchstatus == 'true') {catchstatus = 'true'; catchaddon = ',ALIVE';}
   if(catchstatus == 'false') {catchstatus = 'false'; catchaddon = ',failed';}
   if(catchstatus == 'dead') {catchstatus = 'dead'; catchaddon = ',RIP BOX';}
+  if(catchstatus == 'false_by_others') {catchstatus = 'false_by_others'; catchaddon = ',failed';}
   //ID durch Name bekommen
   const id = getPokemonIdByName(namePokemon); 
   //console.log('getPokemonIdByName Pikachu:', id); // Sollte 25 sein
@@ -2620,7 +2629,7 @@ async function catchPokemonByName(namePokemon,rt,nickname2,catchstatus)
       save(); renderRoutes(); renderEncounter(); renderBox(); renderBoxDrawer(); renderRouteGroups();
       if(catchstatus == 'true') {catchstatus = 'true'; catchaddon = '';}
       // Server: species für "All Teams" aktualisieren
-      if (window.NZ) window.NZ.upsertPokemon(rt.name, toTitle(chosen.name), catchstatus).catch(console.error);
+      //if (window.NZ) window.NZ.upsertPokemon(rt.name, toTitle(chosen.name), catchstatus).catch(console.error);
 } 
 
 

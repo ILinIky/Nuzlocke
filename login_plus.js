@@ -164,6 +164,8 @@ function ljjoinlobby(){
     inName.addEventListener('input', updateAvatar);
     updateAvatar();
 
+ 
+
     // Theme Auswahl
     themeGrid.addEventListener('click', (e)=>{
       const chip = e.target.closest('.theme-chip'); if (!chip) return;
@@ -172,12 +174,14 @@ function ljjoinlobby(){
       // Previewfarben:
       const a = getComputedStyle(chip).getPropertyValue('--a').trim();
       const b = getComputedStyle(chip).getPropertyValue('--b').trim();
+      
+      
       themePrev.style.setProperty('--themeA', a);
       themePrev.style.setProperty('--themeB', b);
       // Ring / Accent live setzen
       applyThemeToRoot(chosenTheme, a, b);
     });
-
+    //applyThemeToRoot(chosenTheme, a, b);
     // Inputs Verhalten
     inCode.addEventListener('input', ()=>{
       const c = inCode.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8);
@@ -245,7 +249,10 @@ function ljjoinlobby(){
     );
   }
 
+
+
   function applyThemeToRoot(type, a, b){
+    alert(type);
     const root = document.documentElement;
     if (a && b){
       root.style.setProperty('--ring', a);
@@ -253,6 +260,7 @@ function ljjoinlobby(){
     }
     // leichter globaler Akzent
     root.style.setProperty('--theme-type', type || '');
+    alert(type);
   }
 
   // Countdown bubble
@@ -516,6 +524,20 @@ function ljjoinlobby(){
     return promise; // -> string | null
   }
 
+  setTimeout(loadtheme, 1); // lade Theme nach kurzer Verzögerung (nachdem Login offen ist)
+
+function loadtheme(){
+      // 2) Aus localStorage laden und sicher parsen
+      const raw = localStorage.getItem('nuz_theme_colors');
+      let colors = [];
+      try { colors = JSON.parse(raw || '[]'); } catch {}
+      const [hex1, hex2] = (Array.isArray(colors) && colors.length >= 2)
+        ? colors
+        : ['#705746', '#3E2E23']; // Fallback (oder nimm deine PALETTES.fire)
+        document.documentElement.style.setProperty('--ring', hex1);
+      document.documentElement.style.setProperty('--ok',   hex2);
+  }
+
   // ---------- Screen: Theme ----------
   function openTheme(){
     const initialType = (localStorage.getItem('nuz_theme_type') || 'fire').toLowerCase();
@@ -562,11 +584,25 @@ function ljjoinlobby(){
 
     sheet.querySelector('#lsOk').onclick = () => {
       //alert('Das Theme wird übernommen, wenn du im Code auf "Übernehmen" klickst.');
-      //  window.AppActions.setTrainerName('77799', { rejoin:true });
+      //window.AppActions.setTrainerName('77799', { rejoin:true });
        
 
 
       close({ type: sel, colors: PALETTES[sel] || PALETTES.fire });
+       //pick = { type:'electric', colors:['#F7D02C','#C7A40A'] }
+      // z.B. QuickActions.changeTheme(pick);
+      // sel: der gewählte Key, z.B. 'electric'
+const type   = sel;
+const colors = PALETTES?.[sel] ?? PALETTES.fire; // Fallback auf 'fire'
+
+const pick = { type, colors };
+close(pick); // falls dein UI geschlossen werden soll
+
+// persistent speichern
+localStorage.setItem('nuz_theme_type', type);
+localStorage.setItem('nuz_theme_colors', JSON.stringify(colors));
+loadtheme();
+
     };
   }
 
@@ -658,9 +694,12 @@ function openJoin(){
 
 
 
+
+
   // ---------- Export ---------- --> um die Funktion für andere nutzen zu können
   //window.LoginScreens = { openName, openTheme };
   window.LoginScreens = { openName, openTheme, openJoin };
+  window.loadtheme = loadtheme;
 })();
 
 
