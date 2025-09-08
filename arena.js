@@ -9,14 +9,14 @@
     // Lege die PNGs unter /assets/gyms/kanto/ ab (Dateinamen wie unten).
     const GYMSETS = {
       kanto: [
-        { key:'brock',   name:'Rocko',    city:'Marmoria',  badge:'Felsorden',    cap:14, type:'rock',    img:'assets/gyms/kanto/brock.png',   colors:['#B6A136','#7A6524'] },
-        { key:'misty',   name:'Misty',    city:'Azuria',    badge:'Quellorden',   cap:21, type:'water',   img:'assets/gyms/kanto/misty.png',   colors:['#6390F0','#2F62CE'] },
-        { key:'surge',   name:'Major Bob',city:'Orania',    badge:'Donnerorden',  cap:24, type:'electric',img:'assets/gyms/kanto/surge.png',   colors:['#F7D02C','#C7A40A'] },
-        { key:'erika',   name:'Erika',    city:'Prismania', badge:'Regenbogen',   cap:29, type:'grass',   img:'assets/gyms/kanto/erika.png',   colors:['#7AC74C','#3F8F26'] },
-        { key:'koga',    name:'Koga',     city:'Fuchsania', badge:'Seelenorden',  cap:43, type:'poison',  img:'assets/gyms/kanto/koga.png',    colors:['#A33EA1','#6B1E6A'] },
-        { key:'sabrina', name:'Sabrina',  city:'Saffronia', badge:'Sumpforden',   cap:43, type:'psychic', img:'assets/gyms/kanto/sabrina.png', colors:['#F95587','#BC2154'] },
-        { key:'blaine',  name:'Pyro',     city:'Zinnober',  badge:'Vulkanorden',  cap:47, type:'fire',    img:'assets/gyms/kanto/blaine.png',  colors:['#EE8130','#B34D0B'] },
-        { key:'gio',     name:'Giovanni', city:'Vertania',  badge:'Erdorden',     cap:50, type:'ground',  img:'assets/gyms/kanto/giovanni.png',colors:['#E2BF65','#9B7D36'] }
+        { key:'brock',   name:'Rocko',    city:'Striaton Gym',  badge:'Felsorden',    cap:14, type:'water',    img:'assets/gyms/kanto/blwh-ccc.webp',   colors:['#B6A136','#7A6524'] },
+        { key:'misty',   name:'Lenora',   city:'Nacrene Gym',    badge:'Quellorden',   cap:20, type:'normal',   img:'assets/gyms/kanto/blwh-lenora.webp',   colors:['#6390F0','#2F62CE'] },
+        { key:'surge',   name:'Burgh',    city:'Castelia Gym',    badge:'Donnerorden',  cap:23, type:'bug',img:'assets/gyms/kanto/blwh-burgh.webp',   colors:['#F7D02C','#C7A40A'] },
+        { key:'erika',   name:'Elesa',    city:'Nimbasa Gym', badge:'Regenbogen',   cap:27, type:'electric',   img:'assets/gyms/kanto/blwh-elesa.webp',   colors:['#7AC74C','#3F8F26'] },
+        { key:'koga',    name:'Clay',     city:'Driftveil Gym', badge:'Seelenorden',  cap:31, type:'ground',  img:'assets/gyms/kanto/blwh-clay.webp',    colors:['#A33EA1','#6B1E6A'] },
+        { key:'sabrina', name:'Skyla',  city:'Mistralton Gym', badge:'Sumpforden',   cap:35, type:'flying', img:'assets/gyms/kanto/blwh-skyla.webp', colors:['#F95587','#BC2154'] },
+        { key:'blaine',  name:'Brycen',     city:'Iccirus Gym',  badge:'Vulkanorden',  cap:39, type:'ice',    img:'assets/gyms/kanto/blwh-brycen.webp',  colors:['#EE8130','#B34D0B'] },
+        { key:'gio',     name:'Drayden', city:'Opelucid Gym',  badge:'Erdorden',     cap:43, type:'dragon',  img:'assets/gyms/kanto/blwh-drayden.webp',colors:['#E2BF65','#9B7D36'] }
       ]
       // → später: johto, hoenn, … ergänzen
     };
@@ -71,7 +71,7 @@
             </div>
             <div class="row">
               <select id="gyGameSel" class="gy-select">
-                <option value="kanto">Kanto (Gen 1/FRLG)</option>
+                <option value="kanto">black and white</option>
               </select>
               <div class="gy-progress" title="Fortschritt">
                 <div class="gy-progress-bar"><span id="gyProgFill"></span></div>

@@ -746,7 +746,7 @@ function renderRoutes(){
       if (status === 'true'){ statusText='CATCHED'; statusClass='caught'; }
       else if (status === 'false'){ statusText='NOT CATCHED'; statusClass='failed';}
       else if (status === 'dead'){ statusText='DEAD'; statusClass='dead'; } 
-      else if (status === 'false_by_others'){ statusText='KILLED BY SOMEONE'; statusClass='failed_by_others';   
+      else if (status === 'false_by_others'){ statusText='FAILED BY SOMEONE'; statusClass='failed_by_others';   
        }
   
       div.innerHTML = `
@@ -844,11 +844,13 @@ function renderEncounter(){
   search.addEventListener('input', updatePreview);
 
   btnCaught.onclick = async ()=>{
+   
     //console.warn(rt);
     const chosen = resolvePokemon(search.value);
     if(!chosen) { PokeBanner.warn(`Bitte ein gültiges Pokémon auswählen.`); return; }
 // 🎯 Wurf + Fang-Animation
 await RouteFX.epicCatch('#encSprite', rt.name); // ← Animation
+btnClear.click()
     rt.encounter = {
       status:'true', pokemonId: chosen.id, pokemonName: chosen.name, sprite: SPRITE(chosen.id), nickname: nick.value.trim(), updatedAt: now()
     };
@@ -859,6 +861,7 @@ await RouteFX.epicCatch('#encSprite', rt.name); // ← Animation
       type: getTypesByNameFromLocal(chosen.name)+',ALIVE'    // ⬅️ neu
      });
     }
+    
     save(); renderRoutes(); renderEncounter(); renderBox(); renderBoxDrawer(); renderRouteGroups();
 
     // Server: species für "All Teams" aktualisieren
@@ -1143,7 +1146,8 @@ function renderTeam(){
       const res = checkifpokemonisusable(mon.routeName); // nutzt window.nzLastListState
       if (res === true) {
       }else {
-        setTimeout(() =>   PokeBanner.warn(`Diese Route ist durch <b style="color:orange">${res.join(', ')}</b> nicht mehr verfügbar! :)`), 5);
+        
+        setTimeout(() =>   PokeBanner.warn(`Diese Route ist durch <b style="color:orange">${res.join(', ')}</b> nicht mehr verfügbar!`), 5);
         return;
       }
       if(!mon) return;
@@ -1204,6 +1208,7 @@ try {
 
     // Click-to-place
     slot.addEventListener('click', async ()=>{
+    
      
       if(!selectedFromBoxUid) return;
       const pick = state.box.find(m=>m.uid===selectedFromBoxUid);
@@ -1490,7 +1495,7 @@ function holdSync(ms = 2500){ nzLocalHoldUntil = Date.now() + ms; }
       const next = (now < _fastUntil) ? NZ_POLL_FAST : (hidden ? NZ_POLL_BG : NZ_POLL_BASE);
       if( now > _fastUntil){
         if( fastpull_msg ){
-          PokeBanner.ok(`Schnelles Abfragen beendet.`,1500);
+          //PokeBanner.ok(`Schnelles Abfragen beendet.`,1500);
         }
        fastpull_msg = false;
        
@@ -1538,7 +1543,7 @@ function holdSync(ms = 2500){ nzLocalHoldUntil = Date.now() + ms; }
   document.dispatchEvent(new CustomEvent('nz:poll-ready'));
 })();
 startAdaptivePolling();
-window.bumpFastPolling?.(30000,true);
+window.bumpFastPolling?.(15000,true);
 
 
 
@@ -2108,7 +2113,7 @@ function nzRenderAllTeams(st){
               <div class="poke-top">
                 <div>
                   <div class="poke-name">${toTitle(mon.species)}</div>
-                  <div class="tag">${rt}</div>
+                  <div class="tag">${rt} - <b style="color:var(--ring)">${mon.nickname || ''}</b></div>
                 </div>
               </div>
               <div class="poke-sprite"><img alt="${toTitle(mon.species)}" src="${sprite}"></div>
@@ -2126,7 +2131,7 @@ function nzRenderAllTeams(st){
 
     return `
       <div class="player-team">
-        <div class="pname">Team: ${esc(p.name)}${p.online ? " <span style='opacity:.65'>(online)</span>" : ""}</div>
+        <div class="pname">Trainer: ${esc(p.name)}${p.online ? " <span style='opacity:.65'>(online)</span>" : ""}</div>
         <div class="trow">${cells}</div>
       </div>`;
   }).join("");
@@ -2558,10 +2563,10 @@ if(localStorage.getItem('lobbyCode') == null)
 
 // 1) Einfach & robust: exakt (case-insensitive)
 function getRouteByName(name){
-  console.log(state?.routes);
+  
   if (!name || !Array.isArray(state?.routes)) return null;
   const target = String(name).trim().toLowerCase();
-  console.warn('getRouteByName:', target);
+
   return state.routes.find(r => String(r.name).trim().toLowerCase() === target) || null;
 }
 
@@ -2571,7 +2576,7 @@ async function nzSyncBox(){
 
   // alle Spieler:
   (st.pokemons || []).forEach(p => {
-    console.log('Spieler:', p.route, p.species, p.nickname,p.caught);
+    //console.log('Spieler:', p.route, p.species, p.nickname,p.caught);
     catchPokemonByName(p.species, getRouteByName(p.route),p.nickname,p.caught);
   });
 }
@@ -2604,9 +2609,25 @@ function getPokemonIdByName(name, listOverride=null){
   return hit?.id ?? null;
 }
 
+
+// Early-out, wenn #nickname oder #pokeSearch "aktiv" sind
+function isActive(id){
+  const el = document.getElementById(id);
+  if (!el) return false;
+  const focused  = el === document.activeElement || el.contains(document.activeElement);
+  const hasCls   = el.classList.contains('active');
+  const ariaOpen = el.getAttribute('aria-expanded') === 'true';
+  const dataOpen = el.dataset.open === 'true' || el.dataset.active === 'true';
+  return focused || hasCls || ariaOpen || dataOpen;
+}
+
 async function catchPokemonByName(namePokemon,rt,nickname2,catchstatus)
 {
-  console.error(catchstatus);
+  //wenn nickname oder pokeSearch auf active sind dann return
+// direkt am Anfang deiner Funktion/Handler:
+//if (isActive('nickname') || isActive('pokeSearch')) return;
+
+  //console.error(catchstatus);
   let catchaddon = '';
   if(catchstatus == 'true') {catchstatus = 'true'; catchaddon = ',ALIVE';}
   if(catchstatus == 'false') {catchstatus = 'false'; catchaddon = ',failed';}
@@ -2620,6 +2641,7 @@ async function catchPokemonByName(namePokemon,rt,nickname2,catchstatus)
   if(!chosen) { console.warn('catchPokemonById: no such pokemon id', id); return; }
   // 🎯 Wurf + Fang-Animation
   //await RouteFX.epicCatch('#encSprite', rt.name); // ← Animation
+  try { 
       rt.encounter = {
         status:catchstatus, pokemonId: chosen.id, pokemonName: chosen.name, sprite: SPRITE(chosen.id), nickname: nickname2, updatedAt: now()
       };
@@ -2632,6 +2654,7 @@ async function catchPokemonByName(namePokemon,rt,nickname2,catchstatus)
       }
       save(); renderRoutes(); renderEncounter(); renderBox(); renderBoxDrawer(); renderRouteGroups();
       if(catchstatus == 'true') {catchstatus = 'true'; catchaddon = '';}
+      } catch(e){  }
       // Server: species für "All Teams" aktualisieren
       //if (window.NZ) window.NZ.upsertPokemon(rt.name, toTitle(chosen.name), catchstatus).catch(console.error);
 } 
@@ -2650,7 +2673,7 @@ function _findRouteKey(routesObj, routeName){
 // Wert-Normalisierung: was gilt als "erfolgreich"?
 function _isSuccess(val){
   const v = String(val ?? '').toLowerCase();
-  return v === 'true' || v === 'caught' || v === 'yes' || v === '1';
+  return v === 'true' || v === 'caught' || v === 'yes' || v === '1' || v === 'false_by_others';
 }
 
 /**

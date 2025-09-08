@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Netlify Global Counter</title>
+    <style>
+      :root { font: 16px/1.4 system-ui, sans-serif; }
+      body { display:grid; place-items:center; min-height:100vh; margin:0; background:#0f172a; color:#e2e8f0; }
+      .card { padding:2rem; border-radius:1rem; background:#111827; box-shadow:0 10px 30px rgba(0,0,0,.25); text-align:center; }
+      .count { font-size: clamp(3rem, 8vw, 6rem); margin: .25rem 0 1rem; letter-spacing:.03em; }
+      button { font:600 1.125rem/1.1 inherit; padding:.85rem 1.25rem; border-radius:.75rem; border:none; cursor:pointer; }
+      button:disabled { opacity:.6; cursor:progress; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>🔢 Global Counter</h1>
+      <div id="count" class="count">…</div>
+      <button id="inc">+1 erhöhen</button>
+      <p id="status" style="opacity:.75"></p>
+    </div>
+
+    <script>
+      const $count = document.getElementById('count');
+      const $inc = document.getElementById('inc');
+      const $status = document.getElementById('status');
+
+      async function load() {
+        const r = await fetch('/api/counter');
+        const j = await r.json();
+        $count.textContent = j.count;
+      }
+
+      async function inc() {
+        try {
+          $inc.disabled = true;
+          const r = await fetch('/api/counter', { method: 'POST' });
+          const j = await r.json();
+          if (!r.ok) throw new Error(j.error || 'Fehler');
+          $count.textContent = j.count;
+          $status.textContent = 'Gespeichert ✅';
+          setTimeout(() => ($status.textContent = ''), 1200);
+        } catch (e) {
+          console.error(e);
+          $status.textContent = 'Fehlgeschlagen ❌ – bitte erneut.';
+        } finally {
+          $inc.disabled = false;
+        }
+      }
+
+      $inc.addEventListener('click', inc);
+      load();
+    </script>
+  </body>
+</html>
