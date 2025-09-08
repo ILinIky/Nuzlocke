@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Nuzlocke Companion – Single Player</title>
+  <title>Nuzlocke Multiplayer Trainer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
@@ -17,23 +17,41 @@
   <link rel="stylesheet" href="loader.css">
   <link rel="stylesheet" href="mini.css">
   <link rel="stylesheet" href="pokemon-select.css">
+  <link rel="stylesheet" href="pokemon-msg.css">
+  <script src="stable-player-id.js"></script>
   <script src="loader.js"></script>
+  <script src="pokemon-msg.js" defer></script>
+
+
 <script>
   // Anzeigen
-  PokeLoader.show('Verbinde zur Lobby…');
+  const checkif = localStorage.getItem('nuzlocke_state_v1');
+  if(!checkif){
 
-  // Text später updaten
-  setTimeout(() => PokeLoader.setText('Hole Team-Daten…'), 250);
-  setTimeout(() => PokeLoader.setHint('Das kann einen Moment dauern.'), 600);
-  // Optionaler Untertext (kleiner Hinweis)
-  //PokeLoader.setHint('Das kann einen Moment dauern.');
+  }else{
+    PokeLoader.show('Verbinde zum Server...');
 
-  // Fertig
-  setTimeout(() =>  PokeLoader.hide(), 1500);
+// Text später updaten
+setTimeout(() => PokeLoader.setText('Hole Team-Daten…'), 1000);
+setTimeout(() => PokeLoader.setHint('Das kann einen Moment dauern.'), 1200);
+// Optionaler Untertext (kleiner Hinweis)
+//PokeLoader.setHint('Das kann einen Moment dauern.');
 
+// Fertig
+setTimeout(() =>  PokeLoader.hide(), 1500);
+  }
+  
+  
+
+  
+
+  
   
   //PokeLoader.hide();
 </script>
+
+
+
 
   <style>
     :root{
@@ -43,7 +61,13 @@
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
-      margin:0; color:#e8ecff; background: radial-gradient(1200px 600px at 10% 10%, #17224a 0, #0e1530 40%, #0b1020 100%);
+      margin:0; color:#e8ecff; 
+      background: radial-gradient(1200px 600px at 10% 10%, #17224a 0, #0e1530 40%, #0b1020 100%);
+      background-repeat: no-repeat;
+background-size: cover;     /* füllt die Fläche */
+background-attachment: fixed; /* bleibt beim Scrollen stehen (optional) */
+background-color: #0b1020;  /* Fallback für Bereiche außerhalb */
+
       font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
       overflow-x:hidden;
     }
@@ -66,7 +90,7 @@
 html,body{ height:100% }
 body{
   margin:0; color:#e8ecff;
-  background: radial-gradient(1200px 600px at 10% 10%, #17224a 0, #0e1530 40%, #0b1020 100%);
+ 
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
   overflow-x:hidden;
 }
@@ -95,6 +119,7 @@ header{
 nav.tabs{ display:flex; gap:8px; flex-wrap:wrap; position:relative }
 .tab-btn{
   border:1px solid rgba(255,255,255,.12); background:#0e1633; color:#dfe6ff;
+  min-width: 100px;
   padding:10px 14px; border-radius:12px; cursor:pointer; font-weight:700; letter-spacing:.2px;
   box-shadow:0 4px 14px rgba(0,0,0,.25), inset 0 0 0 0px var(--ring);
   transition:.2s; position:relative; overflow:hidden; backdrop-filter:saturate(110%);
@@ -141,7 +166,17 @@ main{ max-width:1200px; margin:18px auto 64px; padding:0 18px }
 /* ======================================
    ROUTES – modern & animated
    ====================================== */
-.routes-list{ max-height:520px; overflow:auto; padding-right:8px }
+.routes-list{ 
+  max-height:600px; 
+  overflow:auto; 
+  padding-right:8px;
+  scrollbar-width: thin; /* auto | thin | none */
+  scrollbar-color: var(--ok) #0a1230; /* thumb | track */
+  scrollbar-gutter: stable both-edges;
+  overscroll-behavior: contain;
+  padding-right: 18px; /* etwas mehr Platz für breitere Thumbs */
+}
+
 .route-item{
   overflow: hidden;
   display:flex; justify-content:space-between; align-items:center; gap:10px;
@@ -253,6 +288,8 @@ input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inse
   border:1px solid rgba(255,255,255,.22); background:#0e183b; color:#fff; padding:10px 14px;
   border-radius:12px; cursor:pointer; font-weight:800; letter-spacing:.2px; transition:.18s;
   position:relative; overflow:hidden; box-shadow:0 6px 20px rgba(0,0,0,.28);
+  text-align: center; min-width: 150px; 
+  
 }
 .btn:hover{ transform:translateY(-1px) }
 .btn.ok{ background:#0f3d33; border-color:#135e4e }
@@ -747,6 +784,9 @@ input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inse
   transform: translateY(-.5px);
 }
 
+
+
+
 /* KLEINER TAG AN DER BOX GEFANGEN - FAILED - RIB BOX */
 
 
@@ -762,8 +802,8 @@ input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inse
     <nav class="tabs" id="tabs">
       <button class="tab-btn active" data-tab="routes">Routen</button>
       <button class="tab-btn" data-tab="box">Box</button>
-      <button class="tab-btn" data-tab="team">team</button>
-      <button class="tab-btn" data-tab="allteams">all Teams</button>
+      <button class="tab-btn" data-tab="team">Team</button>
+      <button class="tab-btn" data-tab="allteams">Soul Links</button>
       <button class="tab-btn" data-tab="moves">Moves</button>
       <button class="tab-btn" data-tab="gyms">Arenen</button>
       <button class="tab-btn" data-tab="lobby">Lobby</button>
@@ -778,7 +818,7 @@ input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inse
       <div class="grid r2c3">
         <aside class="card">
           <h3>Routen & Orte</h3>
-          <div class="row" style="margin-bottom:10px">
+          <div class="row" style="margin-bottom:10px; display: none;">
             <input id="addRouteName" type="text" placeholder="Eigene Route hinzufügen…" />
             <button class="btn" id="addRouteBtn">+ Hinzufügen</button>
           </div>
@@ -850,7 +890,7 @@ input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inse
       <div class="card drawer">
         
         <h3>Box (Schnellzugriff)  <span class="poke-ball" aria-hidden="true"></span>
-          <input id="boxSearch" style="margin-left: 30px;" type="search" placeholder="Name,Route" autocomplete="off">
+          <input id="boxSearch2" style="margin-left: 30px;" type="search" placeholder="Name,Route" autocomplete="off">
          
      
         
@@ -1017,8 +1057,11 @@ input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inse
  
   <script src="control-api2.js"></script>
   <script src="hotkeys.js"></script>
-  <script src="stable-player-id.js"></script>
+  
   <script src="mini.js"></script>
+
+  
+
 
   
  

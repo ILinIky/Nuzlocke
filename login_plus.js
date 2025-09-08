@@ -176,10 +176,18 @@ function ljjoinlobby(){
       const b = getComputedStyle(chip).getPropertyValue('--b').trim();
       
       
+      
       themePrev.style.setProperty('--themeA', a);
       themePrev.style.setProperty('--themeB', b);
+
+      localStorage.setItem('nuz_theme_type', chip.dataset.type);
+      localStorage.setItem('nuz_theme_colors', JSON.stringify([a, b]));
+
+
       // Ring / Accent live setzen
       applyThemeToRoot(chosenTheme, a, b);
+      //loadtheme();
+      
     });
     //applyThemeToRoot(chosenTheme, a, b);
     // Inputs Verhalten
@@ -224,16 +232,18 @@ function ljjoinlobby(){
         try{
           // global variablen füllen (dein Script nutzt die) + URL anpassen
           window.nzPlayerName = nm;
-          window.nzLobbyCode = code;
+          //window.nzLobbyCode = code;
           localStorage.setItem('playerName', nm);
-          localStorage.setItem('lobbyCode', code);
-          history.replaceState(null,"",`?code=${code}`);
-          quickjoin(code);         
+          //localStorage.setItem('lobbyCode', code);
+          //history.replaceState(null,"",`?code=${code}`);
+          //loadtheme();
+          setTimeout(()=> window.quickjoin(code), 1500); // ⬅️ Namen ändern
         }catch(e){ console.warn('[LoginPlus] join failed:', e); }
       }
 
       setTimeout(()=> { realStart?.classList.remove('loading'); cardNode?.classList.remove('starting'); }, 1200);
       confettiBurst();
+      window.introduction?.();
     });
 
     // Enter-Key auf Step1
@@ -252,7 +262,7 @@ function ljjoinlobby(){
 
 
   function applyThemeToRoot(type, a, b){
-    alert(type);
+    
     const root = document.documentElement;
     if (a && b){
       root.style.setProperty('--ring', a);
@@ -260,7 +270,7 @@ function ljjoinlobby(){
     }
     // leichter globaler Akzent
     root.style.setProperty('--theme-type', type || '');
-    alert(type);
+  
   }
 
   // Countdown bubble
@@ -495,10 +505,10 @@ function ljjoinlobby(){
         </div>
         <div class="ls-body">
           <div class="ls-row">
-            <span class="ls-badge">Profil2</span>
-            <input id="lsName" class="ls-input" type="text" placeholder="Dein Trainername" value="${initial.replace(/"/g,'&quot;')}">
+            <span class="ls-badge">Trainer</span>
+            <input id="lsName" class="ls-input" type="text" placeholder="Dein Trainername" value="${initial.replace(/"/g,'&quot;')}" autocomplete="off">
           </div>
-          <div class="ls-help">Nur Eingabe sammeln – angewendet wird erst nach deiner Bestätigung im Code.</div>
+          <div class="ls-help">Hier kannst du deinen Trainer Namen ändern... Vallah!!</div>
         </div>
         <div class="ls-actions">
           <button class="ls-btn ghost" id="lsCancel">Abbrechen</button>
@@ -692,6 +702,12 @@ function openJoin(){
   return promise;
 }
 
+setTimeout(() => {
+  const el = document.getElementById('wizCode');
+  if (!el) return;
+  el.value = window.lobbycodefromurl || '';
+  el.dispatchEvent(new Event('input', { bubbles: true })); // falls dein UI auf input lauscht
+}, 1500);
 
 
 

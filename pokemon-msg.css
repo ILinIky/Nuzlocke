@@ -1,0 +1,43 @@
+
+:root{
+  --nz-ring: #ffd23f; /* Fallback, falls du schon --ring hast, kannst du unten anpassen */
+}
+.nz-overlay{
+  position:fixed; inset:0; z-index:2147483000;
+  background:rgba(0,0,0,.55);
+  display:grid; place-items:center; padding:20px;
+}
+.nz-msg{
+  width:min(520px, 92vw); color:#eaf2ff;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.14);
+  background:
+    linear-gradient(180deg,#0b1333 0%, #0a1230 100%),
+    radial-gradient(420px 160px at 0% -20%, rgba(255,210,63,.06), transparent 60%);
+  box-shadow:0 12px 36px rgba(0,0,0,.44), 0 0 0 1px rgba(255,255,255,.04) inset;
+  overflow:hidden;
+  animation:nz-pop .12s ease-out both;
+}
+@keyframes nz-pop{ from{ transform:scale(.97); opacity:0 } to{ transform:none; opacity:1 } }
+
+.nz-head{ display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid rgba(255,255,255,.08) }
+.nz-title{ font-weight:900; letter-spacing:.2px; margin:0; font-size:16px }
+.nz-ball{ width:20px; height:20px; border-radius:50%; box-shadow: inset 0 0 0 2px #000; position:relative; flex:0 0 20px;
+  background: conic-gradient(from 180deg, #ee1515 0 180deg, #fff 180deg 360deg);
+}
+.nz-ball::after{ content:""; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  width:7px; height:7px; border-radius:50%; background:#fff; box-shadow: inset 0 0 0 2px #000;
+}
+.nz-body{ padding:14px; line-height:1.5; font-size:14px; white-space:pre-wrap }
+.nz-foot{ padding:12px 14px 14px; display:flex; justify-content:flex-end }
+
+.nz-btn{
+  appearance:none; cursor:pointer; user-select:none;
+  border-radius:999px; padding:8px 14px; font-weight:900; letter-spacing:.2px; line-height:1;
+  border:1px solid rgba(255,255,255,.18);
+ 
+  transition:transform .08s ease, box-shadow .18s ease, filter .18s ease;
+}
+.nz-btn:hover{ transform:translateY(-1px) }
+.nz-btn:focus-visible{ outline:4px solid color-mix(in srgb, var(--ring, var(--nz-ring)), transparent 40%); outline-offset:2px }
+

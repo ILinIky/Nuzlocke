@@ -252,7 +252,7 @@ async function joinLobby({ name, code, id }){
 
   //const id = (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)) + "-" + Date.now();
   const nametolower = nm.toLowerCase();
-  await sql`INSERT INTO players(id,name,joined_at,last_seen) VALUES(${id},${nm},now(),now(),${nametolower}) ON CONFLICT(id) DO NOTHING`;
+  await sql`INSERT INTO players(id,name,joined_at,last_seen,name_lower) VALUES(${id},${nm},now(),now(),${nametolower}) ON CONFLICT(id) DO NOTHING`;
 
   // ⛔ Ban-Check
   const nmLower = nm.toLowerCase();
@@ -284,9 +284,16 @@ async function rejoinLobby({ name, code,pid }){
   if (exists.length === 0) {
     throw new Error("Lobby existiert nicht");
   }else{
-
+  const nametolower = nm.toLowerCase();
   //await sql`INSERT INTO lobbies(code) VALUES(${cd}) ON CONFLICT(code) DO NOTHING`;
   if (nm) await sql`UPDATE players SET name=${nm}, last_seen=now() WHERE id=${pid}`;
+
+  //if new player, check if player exists
+  const pExists = await sql`SELECT 1 FROM players WHERE id=${pid} LIMIT 1`;
+  if (pExists.length === 0) {
+    console.info("New player, inserting", pid, nm);
+    await sql`INSERT INTO players(id,name,joined_at,last_seen,name_lower) VALUES(${pid},${nm},now(),now(),${nametolower}) ON CONFLICT(id) DO NOTHING`;
+  }
 
   // ⛔ Ban-Check
   const nmLower = nm.toLowerCase();

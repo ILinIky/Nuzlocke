@@ -2,16 +2,21 @@
 /* ------------------------------ Box Filters (Pokémon Style) ------------------------------ */
 (function(){
   const grid = document.getElementById('boxGrid');
-  if(!grid) return;
+  const grid2 = document.getElementById('boxDrawer');
+  if (!grid && !grid2) return; // ⬅️ nur abbrechen, wenn beide fehlen
 
   const searchEl  = document.getElementById('boxSearch');
+  const searchEl2  = document.getElementById('boxSearch2');
   const typesWrap = document.getElementById('chipTypes');
   const routesWrap= document.getElementById('chipRoutes');
   const  specialboxes = document.getElementById('chipBoxes');
   const clearBtn  = document.getElementById('boxClear');
   const countEl   = document.getElementById('boxCount');
 
-  const selected = { types:new Set(), routes:new Set(), query:'' };
+  // ⬇️ eigener Zustand pro Grid
+  const selected  = { types:new Set(), routes:new Set(), query:'' };   // grid1
+  const selected2 = { types:new Set(), routes:new Set(), query:'' };   // grid2 (falls du später Chips willst)
+
 
   const typeClass = t => `type-${t.toLowerCase()}`;
 
@@ -144,6 +149,29 @@ const failedRip = [...typeCount.entries()]
     countEl.textContent = String(visible);
   }
 
+  function applyFilters2(){
+    if (!grid2) return;
+    const q = norm(selected2.query);          // ⬅️ eigener Query-State
+    const anyType   = selected2.types.size>0; // falls du später Chips für grid2 willst
+    const anyRoute  = selected2.routes.size>0;
+    let visible=0;
+
+    grid2.querySelectorAll('.poke-card').forEach(card=>{
+      const {route, types, name, nick, tagText} = getCardMeta(card);
+      const hay = [name, nick, route, ...types, tagText].join(' ');
+      const matchSearch = q? hay.includes(q) : true;
+      const matchType   = anyType ? types.some(t=> selected2.types.has(t)) : true;
+      const matchRoute  = anyRoute? selected2.routes.has(route) : true;
+      const show = matchSearch && matchType && matchRoute;
+      card.style.display = show ? '' : 'none';
+      if(show) visible++;
+    });
+
+    // Optional: eigener Counter für grid2 (boxCount2), sonst weglassen
+    // const countEl2 = document.getElementById('boxCount2');
+    // if (countEl2) countEl2.textContent = String(visible);
+  }
+
   function resetFilters(){
     selected.types.clear();
     selected.routes.clear();
@@ -151,21 +179,27 @@ const failedRip = [...typeCount.entries()]
     searchEl.value = '';
     syncChipActiveState();
     applyFilters();
+    applyFilters2();
   }
 
   // Events
   searchEl?.addEventListener('input', debounce(()=>{ selected.query = searchEl.value; applyFilters(); }, 120));
+  searchEl2?.addEventListener('input', debounce(()=>{ selected2.query = searchEl2.value; applyFilters2(); }, 120));
   clearBtn?.addEventListener('click', resetFilters);
 
   // Beobachte Box-Grid (Render durch deine App) und baue Facets + filtere erneut
-  const obs = new MutationObserver(()=>{
-    collectFacets();
+   // Observer: BEIDE Container korrekt beobachten
+   const obs = new MutationObserver(()=>{
+    collectFacets();   // nur grid1-Chips
     applyFilters();
+    applyFilters2();   // ⬅️ re-applien für grid2 nach DOM-Updates
   });
-  obs.observe(grid, {childList:true, subtree:true});
+  if (grid)  obs.observe(grid,  { childList:true, subtree:true });
+  if (grid2) obs.observe(grid2, { childList:true, subtree:true });
 
   // Falls Box bereits initial befüllt war:
   collectFacets();
   applyFilters();
+  applyFilters2();
 })();
 

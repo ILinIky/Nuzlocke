@@ -11,12 +11,15 @@ window.nzLastListState --> wichtig
 (X) 3. Frist login fix
 (X) 4. Theme in Einstellungen
 5. Alle alert zu toast
-6. Host automatisch bei Lobbyerstellung
+(X) 6. Host automatisch bei Lobbyerstellung
 7. Ban --> message
 8. Alle Routen Erstellen
-9. Route erstellen disablen
+(X) 9. Route erstellen disablen
 10. Bei import und export playerId
-11. Msg Boxen hinzufügen
+(X) 11. Msg Boxen hinzufügen
 12. Vllt Menu oben besser?
 (X) 13. Scrollbalken bei Routes fixen
 14. TESTEN TESTEN TESTEN
+15. Box Icons ändern mit neuem failed
+(X) 16. in der box das suchen enablen
+(X) 17 . Filter hinzufügen

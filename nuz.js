@@ -22,15 +22,7 @@ let pokedex = [];                      // Arbeitsspeicher
 let pokedexLoadPromise = null;         // Dedupe paralleler Loads
 let pokedexTypesLoadPromise = null;    // Dedupe Typ-Hydration
 
-// Mit Action-Button
-PokeBanner.show({
-    title: 'Lobby bereit',
-    message: 'Code: ABC123 – Team wählen?',
-    variant: 'info',
-    actionText: 'Zum Team',
-    onAction: (close)=>{ setActiveTab?.('team'); close(); },
-    duration: 6000
-  });
+
 
 function loadPokedexFromLocal(){
   try{
@@ -790,7 +782,7 @@ function renderEncounter(){
             <div class="row">
               <input list="pokedexList" id="pokeSearch" type="search" placeholder="Pokémon wählen…" value="${hasMon?toTitle(e.pokemonName):''}">
               <datalist id="pokedexList">${listHtml}</datalist>
-              <input id="nickname" type="text" placeholder="Spitzname (optional)" value="${e.nickname||''}">
+              <input id="nickname" type="text" placeholder="Spitzname (optional)" value="${e.nickname||''}" autocomplete="off">
             </div>
             <div class="row" style="margin-top:10px">
               <button class="btn ok" id="btnCaught">CATCHED</button>
@@ -1271,7 +1263,8 @@ try {
         console.warn('[NZ] remove button clicked:', mon);
         const route = mon.routeName;
         if(nzPlayerName !== placedLabelForRoute(route)){
-            alert('Du kannst nur Pokémon entfernen, die du selbst in dein Team gepickt hast.');
+            //alert('Du kannst nur Pokémon entfernen, die du selbst in dein Team gepickt hast.');
+            PokeBanner.warn('Du kannst nur Pokémon entfernen, die du selbst in euer Team gepickt hast.');
             return;
         }
         state.team[i] = null; 
@@ -1645,7 +1638,7 @@ function nzRenderLobby(st){
             <div class="input-wrap name-wrap">
               <span class="poke-ball" aria-hidden="true"></span>
               <input id="nzName" type="text" hidden="true" placeholder="Dein Name" value="${_esc(name)}" readonly>
-<button id="nzRename" class="btn warn" title="Name ändern">TEST</button>
+<button id="nzRename" class="btn warn" style="display:none" title="Name ändern">TEST</button>
 <button id="themeBtn" class="btn warn" title="Name ändern">Theme ändern</button>
 <button id="renameBtn" class="btn warn" title="Name ändern">Name ändern</button>
 <button id="nzCreate" style="display:none" class="btn ok">Erstellen</button>
@@ -1745,24 +1738,31 @@ document.getElementById('renameBtn')?.addEventListener('click', async ()=>{
     // Link kopieren
     $('#nzCopy')?.addEventListener('click', async ()=>{
       try{
+       
         await navigator.clipboard.writeText(shareLinkEl.textContent);
-        toast('Link kopiert!');
+       //toast('Link kopiert!');
+       
       }catch{ toast('Konnte nicht kopieren'); }
     });
     
     // Web Share API / Fallback Kopieren
     $('#nzShare')?.addEventListener('click', async ()=>{
+   
       const url = shareLinkEl.textContent;
       if(navigator.share){
-        try{ await navigator.share({ title:'Nuzlocke Lobby', url }); }
+        try{ await navigator.share({ title:'Nuzlocke Lobby', url });
+        
+       }
         catch(_e){}
       }else{
-        try{ await navigator.clipboard.writeText(url); toast('Link kopiert!'); }catch{}
+        try{  await navigator.clipboard.writeText(url); toast('Link kopiert!'); }catch{}
       }
+     
     });
 
      // Web Share API / Fallback Kopieren
      $('#nzShare2')?.addEventListener('click', async ()=>{
+     
         newLobyCode = _esc(code); // Lobby Code in einer anderen Variable speichern, da _esc immer überschrieben wird.
         //alert(newLobyCode);
         const res = await LoginScreens.openJoin();
@@ -1830,6 +1830,8 @@ localStorage.setItem("nuz_isHost", "1");
       await nzSync();
       setTimeout(() =>  PokeLoader.hide(), 2);
       setTimeout(() =>   PokeBanner.ok(`Lobby ${nzLobbyCode} erfolgreich erstellt`), 500);
+      setTimeout(() =>  NZ.assignRole(nzPlayerId, 'host'),1000);
+      setTimeout(() =>  NZ.syncNow?.(), 1500) ;
     };
   
     elLobbyPane.querySelector("#nzJoin").onclick = async ()=>{
@@ -1867,7 +1869,6 @@ renameBtn?.addEventListener('click', openNameDialog);
   
 
   async function quickjoin(cd) {
-    
     setTimeout(() => PokeLoader.show('Verbinde zur Lobby…'), 600);
     //console.error(cd);
     //alert("QuickJoin:"+cd);
@@ -1876,13 +1877,16 @@ renameBtn?.addEventListener('click', openNameDialog);
       //const cd = (nzCodeEl?.value || '').trim().toUpperCase();
       if (!cd) return alert("Bitte Lobby-Code eingeben");
       // in nzRenderLobby -> #nzJoin onclick:
+      
   
       nzLobbyCode = cd; localStorage.setItem("lobbyCode", nzLobbyCode);
       try{
       if (nzPlayerId) {
         //alert("rejoin");
+        
         await nzApi("rejoinLobby", { pid: nzPlayerId, name: nzPlayerName, code: nzLobbyCode });
       } else {
+        //alert("not useable?");
         const j = await nzApi("joinLobby", { name: nzPlayerName, code: nzLobbyCode,id:nzPlayerId });
         nzPlayerId = j.player.id; localStorage.setItem("playerId", nzPlayerId);
       }
@@ -1915,15 +1919,12 @@ renameBtn?.addEventListener('click', openNameDialog);
       if (document.getElementById('roles-style')) return;
       const css = `
         .role-badge{margin-left:.5rem;padding:.1rem .4rem;border-radius:.4rem;font-size:.8rem;background:#223;opacity:.9}
-        .role-badge.host{background:#3b82f6}
-        .role-badge.cohost{background:#10b981}
-        .role-badge.spectator{background:#6b7280}
         .ctx-menu{position:absolute;z-index:10000;background:#0b1433;border:1px solid rgba(255,255,255,.12);border-radius:8px;box-shadow:0 10px 28px rgba(0,0,0,.45);padding:.35rem}
         .ctx-menu button{display:block;width:100%;text-align:left;background:transparent;border:0;color:#fff;padding:.4rem .7rem;border-radius:.35rem;font-size:.95rem}
         .ctx-menu button:hover{background:rgba(255,255,255,.09)}
         .ctx-menu hr{border:0;border-top:1px solid rgba(255,255,255,.12);margin:.35rem 0}
         .you-badge{margin-left:.4rem;background:#f59e0b;color:#111;padding:.05rem .4rem;border-radius:.35rem;font-size:.75rem;font-weight:700}
-        .role-spectator .slot, .role-spectator .poke-card{cursor:not-allowed}
+      
       `;
       const st = document.createElement('style');
       st.id='roles-style'; st.textContent = css;
@@ -1960,6 +1961,7 @@ renameBtn?.addEventListener('click', openNameDialog);
       const closeMenu = ()=>{ if(menu){ menu.remove(); menu=null; } };
   
       const openMenu = (x,y, pid, isBanned)=>{
+       
         closeMenu();
         menu = document.createElement('div');
         menu.className='ctx-menu';
@@ -2523,6 +2525,7 @@ async function clickCreateLobby(){
       const url = el?.textContent?.trim() ||
                   `${location.origin}${location.pathname}?code=${(window.nzLobbyCode||'').toUpperCase()}`;
       await navigator.clipboard.writeText(url);
+      PokeBanner.ok('Link kopiert!');
       // toast?.('Link kopiert!');
     }catch(e){ console.error(e); }
   }
@@ -2535,6 +2538,7 @@ async function clickCreateLobby(){
       if (!code) { alert('Kein Lobby-Code in der URL gefunden.'); return; }
       navigator.clipboard.writeText(code.toUpperCase());
       // Optional: toast('Code kopiert!');
+      PokeBanner.ok('Code kopiert!');
     } catch (e) {
       console.error(e);
       alert('Konnte den Code nicht kopieren.');
@@ -2700,3 +2704,5 @@ PokeSelect.enhance('#boxViewerSelect', { placeholder: 'Box wählen…' });
   window.copylooby = copylooby; // <-- global verfügbar machen
   window.copylink = copylink; // <-- global verfügbar machen
   window.quickjoin = quickjoin; // <-- global verfügbar machen
+  window.lobbycodefromurl = nzLobbyCode
+  window.setActiveTab = setActiveTab; // <-- global verfügbar machen
