@@ -2625,7 +2625,7 @@ async function catchPokemonByName(namePokemon,rt,nickname2,catchstatus)
 {
   //wenn nickname oder pokeSearch auf active sind dann return
 // direkt am Anfang deiner Funktion/Handler:
-//if (isActive('nickname') || isActive('pokeSearch')) return;
+  if (isActive('nickname') || isActive('pokeSearch')) return;
 
   //console.error(catchstatus);
   let catchaddon = '';
