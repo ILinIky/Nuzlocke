@@ -52,7 +52,7 @@ async function ensurePokedexIfMissing(){
   console.log('[pokedex] not loaded -> fetching…');
   pokedexLoadPromise = (async () => {
     try{
-      const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1025');
+      const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=2025');
       const data = await res.json();
       const list = (data.results || [])
         .map(x => {
