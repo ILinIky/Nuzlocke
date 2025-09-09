@@ -18,12 +18,28 @@
   <link rel="stylesheet" href="mini.css">
   <link rel="stylesheet" href="pokemon-select.css">
   <link rel="stylesheet" href="pokemon-msg.css">
+  <script>
+    cleanupOnce();
+  </script>
   <script src="stable-player-id.js"></script>
   <script src="loader.js"></script>
   <script src="pokemon-msg.js" defer></script>
 
 
 <script>
+(function cleanupOnce(){
+ 
+  const FLAG_KEY = 'nuz_pokedex_cleanup_done';
+  if (!localStorage.getItem(FLAG_KEY)) {
+   
+    localStorage.removeItem('nuz_pokedex_v2');
+    //alert("test");
+    localStorage.setItem(FLAG_KEY, 'true');
+    console.log('[pokedex] old cache removed once');
+  }
+})();
+
+
   // Anzeigen
   const checkif = localStorage.getItem('nuzlocke_state_v1');
   if(!checkif){
