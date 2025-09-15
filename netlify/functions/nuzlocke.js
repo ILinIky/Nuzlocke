@@ -633,6 +633,7 @@ return getroutes;
 } 
 
 async function uploadRoutes({ code, routes }) {
+  console.info(routes);
   const cd = normCode(must(code, 'code'));
   if (!Array.isArray(routes) || routes.length === 0) {
     throw new Error('routes must be a non-empty array');

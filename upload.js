@@ -4,9 +4,9 @@ async function downloadRoutesSample(){
   const code = window.nzLobbyCode;
   const file = await window.nzApi('downloadRoutes', { code });
   //convert this to text
-  const lines = file.map(r => `${r.code},${r.name},${r.ord}`);
+  const lines = file.map(r => `${r.name},${r.ord}`);
   let text  = lines.join("\n");
-  if (text  == '') { text = code+',Starter,1' }
+  if (text  === '') { text = 'Starter,1' }
   //download this file from browser as text file
   const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
   const a = document.createElement('a');
@@ -112,12 +112,14 @@ async function handleUploadRoutesClick(e){
     try {
       const text = await file.text();
       const routes = parseRoutesText(text);
+      console.log(routes);
       if (!routes.length) { alert('Die Datei enthält keine verwertbaren Routen.'); return; }
 
       const mode = 'merge'; // oder 'replace'
       const code = (typeof nzLobbyCode !== 'undefined' && window.nzLobbyCode) ? nzLobbyCode
                   : (typeof currentLobbyCode === 'function' ? currentLobbyCode() : null);
-                 
+
+  
       if (!code) { alert('Kein Lobby-Code gefunden.'); return; }
 
       await window.nzApi('uploadRoutes', { code, routes, mode });
