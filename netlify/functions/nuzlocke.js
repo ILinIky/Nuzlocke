@@ -82,8 +82,8 @@ async function setup()  {
   await sql`CREATE TABLE IF NOT EXISTS routes (
     code text NOT NULL,
     name text NOT NULL,
-    ord  int  NOT NULL DEFAULT 9999,
-    PRIMARY KEY (code, name)
+    ord  INTEGER NOT NULL CHECK (ord BETWEEN 1 AND 55),
+    PRIMARY KEY (code, ord)
   )`;
 
   await sql`CREATE TABLE IF NOT EXISTS lobby_bans (
@@ -605,6 +605,93 @@ async function listState({ code, pid }) {
   return { code: cd, hostId, players, routeSlots, pokemons, boxes, now: nowIso() };
 }
 
+/* UPLOAD FUNKTION */
+/* Wird aktuell clientseitig erledigt, da selten und meist durch den Host */
+// Erwartetes Schema: CREATE UNIQUE INDEX IF NOT EXISTS ux_routes ON routes(code, name);
+
+// TX-Helper wie zuvor
+async function withTx(sql, fn){
+  if (typeof sql.begin === 'function') return await sql.begin(fn);
+  await sql`BEGIN`;
+  try { const r = await fn(sql); await sql`COMMIT`; return r; }
+  catch(e){ try{ await sql`ROLLBACK`; }catch{} throw e; }
+}
+
+/**
+ * Upload/merge von Routen.
+ * - (code, ord) ist UNIQUE
+ * - ord muss 1..55 sein
+ * - fehlende ord werden auf die nächstfreie Position 1..55 gelegt
+ * - mode: 'replace' löscht vorher alle Routen für code
+ */
+async function downloadRoutes({ code}) {
+  const cd = normCode(must(code, 'code'));
+  const getroutes = await sql`
+   SELECT * FROM routes WHERE code = ${cd}
+`;
+return getroutes;
+} 
+
+async function uploadRoutes({ code, routes }) {
+  const cd = normCode(must(code, 'code'));
+  if (!Array.isArray(routes) || routes.length === 0) {
+    throw new Error('routes must be a non-empty array');
+  }
+  if (routes.length > 55) {
+    throw new Error('Too many routes in one upload (limit 55)');
+  }
+
+  // 1) Säubern + harte Validierung (kein Auto-Assign)
+  const cleaned = [];
+  const ordSet = new Set();
+
+  for (const r of routes) {
+    if (!r) continue;
+    const name = String((r.name ?? r.route ?? '').trim()).slice(0, 80);
+    if (!name) throw new Error('Every route needs a non-empty name');
+
+    const n = Number(r.ord);
+    const ord = Number.isInteger(n) ? n : NaN;
+    if (!Number.isInteger(ord)) throw new Error(`ord must be an integer (got: ${r.ord})`);
+    if (ord < 1 || ord > 55) throw new Error(`ord out of range (1..55): ${ord}`);
+    if (ordSet.has(ord)) throw new Error(`duplicate ord in payload: ${ord}`);
+    ordSet.add(ord);
+
+    cleaned.push({ name, ord });
+  }
+
+  // 2) Atomare Ersetzung: erst nach **erfolgreicher** Validierung löschen & neu einspielen
+  return await withTx(sql, async (sqlt) => {
+    const [{ cnt: prevCount } = { cnt: 0 }] = await sqlt/*sql*/`
+      SELECT COUNT(*)::int AS cnt FROM routes WHERE code = ${cd}
+    `;
+
+    await sqlt`DELETE FROM routes WHERE code = ${cd}`;
+
+    // Bulk-Insert (loop ist idR okay; optional VALUES-Block)
+    for (const r of cleaned) {
+      await sqlt/*sql*/`
+        INSERT INTO routes (code, name, ord)
+        VALUES (${cd}, ${r.name}, ${r.ord})
+      `;
+    }
+
+    return {
+      ok: true,
+      code: cd,
+      replaced: prevCount,
+      inserted: cleaned.length,
+      total: cleaned.length
+    };
+  });
+}
+
+
+
+
+/* UPLOAD FUNKTION ENDE */
+
+
 
 
 async function listRoutes({ code }) {
@@ -612,7 +699,7 @@ async function listRoutes({ code }) {
   const rows = await sql`
     SELECT name, ord
     FROM routes
-    WHERE code = 'blackandwhite'
+    WHERE code = ${cd}
     ORDER BY ord ASC, name ASC
   `;
   return { routes: rows };
@@ -703,6 +790,8 @@ export default async (req) => {
     if (action === "list")             return json(await listState(body));
     if (action === "listRoutes")       return json(await listRoutes(body));
     if (action === "useable")          return json(await useable(body));
+    if (action === "uploadRoutes")          return json(await uploadRoutes(body));
+    if (action === "downloadRoutes")          return json(await downloadRoutes(body));
 
     return json({ error:`Unknown action: ${action}` }, 400);
   } catch (e) {

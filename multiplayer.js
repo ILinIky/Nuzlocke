@@ -1,261 +1,141 @@
-// multiplayer.js — strict mount für deine 1.html
-// Schreibt NUR in #nz-lobby und #nz-allteams. Kein doppeltes UI.
 
-const API = "/api/nuzlocke";
-const HEARTBEAT_MS = 15000;
-const POLL_MS = 4000;
-
-let playerId   = localStorage.getItem("playerId")   || "";
-let playerName = localStorage.getItem("playerName") || "";
-let lobbyCode  = (new URL(location.href)).searchParams.get("code")
-              || localStorage.getItem("lobbyCode")
-              || "";
-
-const elLobbyPane = document.querySelector("#nz-lobby");
-const elAllTeams  = document.querySelector("#nz-allteams");
-
-// ---------------- util ----------------
-const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({
-  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-}[c]));
-
-// ---------------- API ----------------
-async function api(action, payload = {}) {
-  const r = await fetch(API, {
-    method: "POST",
-    headers: { "content-type":"application/json" },
-    body: JSON.stringify({ action, ...payload }),
-    cache: "no-store"
-  });
-  const t = await r.text();
-  let j; try { j = JSON.parse(t) } catch { j = { error: t } }
-  if (!r.ok || j.error) throw new Error(j.error || `HTTP ${r.status}`);
-  return j;
-}
-async function listState(code) {
-  const r = await fetch(API, {
-    method: "POST",
-    headers: { "content-type":"application/json" },
-    body: JSON.stringify({ action:"list", code: (code||"").toUpperCase() }),
-    cache: "no-store"
-  });
-  if (r.ok) return r.json();
-  const t = await r.text();
-  throw new Error(`HTTP ${r.status} ${t}`);
+// ---------- Parser: TXT/CSV → [{name, ord}] ----------
+async function downloadRoutesSample(){
+  const code = window.nzLobbyCode;
+  const file = await window.nzApi('downloadRoutes', { code });
+  //convert this to text
+  const lines = file.map(r => `${r.code},${r.name},${r.ord}`);
+  let text  = lines.join("\n");
+  if (text  == '') { text = code+',Starter,1' }
+  //download this file from browser as text file
+  const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `routes-${code || 'sample'}.txt`;
+  document.body.appendChild(a);
+  a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
 }
 
-// ---------------- Lobby UI ----------------
-function renderLobby(st) {
-  if (!elLobbyPane) return;
-  const online = (st.players||[]).filter(p=>p.online).length;
-  elLobbyPane.innerHTML = `
-    <div class="row" style="margin:.5rem 0">
-      <label>Lobby-Code:</label>
-      <input id="nzCode" style="text-transform:uppercase" value="${esc(lobbyCode || st.code || "")}" placeholder="ABC123">
-      <label>Name:</label>
-      <input id="nzName" value="${esc(playerName || "")}" placeholder="Name">
-      <button id="nzCreate" class="btn">Erstellen</button>
-      <button id="nzJoin" class="btn">${playerId ? "Verbinden" : "Beitreten"}</button>
-      <span class="helper">Link: <code>${esc(location.origin+location.pathname)}?code=${esc(lobbyCode||st.code||"")}</code></span>
-    </div>
-    <div>Spieler in Lobby: ${(st.players||[]).length} (online: ${online})</div>
-    <div class="players" style="margin-top:.5rem">
-      ${(st.players||[]).map(p=>`
-        <div class="player">
-          <span class="name">${esc(p.name)}</span>
-          <span class="meta">${p.online ? "online" : "offline"}</span>
-        </div>
-      `).join("")}
-    </div>
-  `;
+function parseRoutesText(rawText) {
+  console.log('[parseRoutesText] parsing…');
+  const text = String(rawText || '').trim();
+  if (!text) return [];
 
-  elLobbyPane.querySelector("#nzCreate").onclick = async ()=>{
-    const nm = elLobbyPane.querySelector("#nzName").value.trim() || "Spieler";
-    playerName = nm; localStorage.setItem("playerName", nm);
-    const j = await api("joinLobby", { name:nm, code:"" });
-    playerId = j.player.id; lobbyCode = j.code;
-    localStorage.setItem("playerId", playerId);
-    localStorage.setItem("lobbyCode", lobbyCode);
-    history.replaceState(null,"",`?code=${lobbyCode}`);
-    await sync();
-  };
+  // Delimiter-Heuristik
+  const hasComma = text.includes(',');
+  const hasSemicolon = text.includes(';');
+  const hasTab = text.includes('\t');
+  const delimiter = hasComma ? ',' : (hasSemicolon ? ';' : (hasTab ? '\t' : null));
 
-  elLobbyPane.querySelector("#nzJoin").onclick = async ()=>{
-    const nm = elLobbyPane.querySelector("#nzName").value.trim() || "Spieler";
-    playerName = nm; localStorage.setItem("playerName", nm);
-    const cd = (elLobbyPane.querySelector("#nzCode").value.trim() || "").toUpperCase();
-    if (!cd) return alert("Bitte Lobby-Code eingeben");
-    lobbyCode = cd; localStorage.setItem("lobbyCode", lobbyCode);
+  // TXT: eine Route je Zeile
+  if (!delimiter) {
+    const lines = text.split(/\r?\n/);
+    const out = [];
+    let n = 0;
+    for (const line of lines) {
+      const name = line.trim();
+      if (!name) continue;
+      out.push({ name, ord: n++ });
+    }
+    return out;
+  }
 
-    if (playerId) {
-      await api("rejoinLobby", { playerId, name: playerName, code: lobbyCode });
+  // CSV (einfach): unterstützt 1-2 Spalten, optional Header: name,ord
+  const lines = text.split(/\r?\n/).filter(l => l.trim().length);
+  if (!lines.length) return [];
+
+  const first = lines[0].split(delimiter).map(s => s.trim().toLowerCase());
+  const looksLikeHeader = first.includes('name') || first.includes('route') || first.includes('ord');
+  const startIdx = looksLikeHeader ? 1 : 0;
+
+  const out = [];
+  let autoOrd = 0;
+
+  for (let i = startIdx; i < lines.length; i++) {
+    const cols = lines[i].split(delimiter).map(s => s.trim());
+    let name = '';
+    let ord = null;
+
+    if (looksLikeHeader) {
+      const idxName = first.indexOf('name') !== -1 ? first.indexOf('name')
+                    : (first.indexOf('route') !== -1 ? first.indexOf('route') : 0);
+      const idxOrd = first.indexOf('ord');
+      name = cols[idxName] || '';
+      if (idxOrd >= 0) {
+        const n = parseInt(cols[idxOrd], 10);
+        ord = Number.isFinite(n) ? n : null;
+      }
     } else {
-      const j = await api("joinLobby", { name: playerName, code: lobbyCode });
-      playerId = j.player.id; localStorage.setItem("playerId", playerId);
+      if (cols.length === 1) {
+        name = cols[0] || '';
+      } else {
+        name = cols[0] || '';
+        const n = parseInt(cols[1], 10);
+        ord = Number.isFinite(n) ? n : null;
+      }
     }
-    history.replaceState(null,"",`?code=${lobbyCode}`);
-    await sync();
-  };
-}
 
-// ---------------- Teams (Alle Spieler) ----------------
-function renderAllTeams(st) {
-  if (!elAllTeams) return;
+    name = String(name).trim();
+    if (!name) continue;
 
-  const byRoute = new Map((st.routeSlots||[]).map(r => [r.route, r.slot]));
-  const routeOf = s => { for (const [rt,sl] of byRoute.entries()) if (sl === s) return rt; return null; };
-
-  const players = st.players || [];
-  elAllTeams.innerHTML = players.map(p => {
-    const box = (st.boxes||{})[p.id] || {};
-    const cells = [1,2,3,4,5,6].map(s => {
-      const rt = routeOf(s);
-      const mon = rt ? box[rt] : null;
-      return `
-        <div class="slot">
-          <div class="slot-inner">
-            ${mon ? `
-              <div style="width:72px;height:72px;display:grid;place-items:center;margin:0 auto;border:1px dashed rgba(255,255,255,.12);border-radius:12px;background:#0a1231">🐾</div>
-              <div class="meta">${esc(rt)} • ${esc(mon.species)}${mon.caught ? "" : " (nicht gefangen)"}</div>
-            ` : `
-              <div class="meta">—</div>
-            `}
-          </div>
-        </div>
-      `;
-    }).join("");
-    return `
-      <div style="margin:.6rem 0">
-        <div class="player"><span class="name">Team: ${esc(p.name)}</span><span class="meta">${p.online?"online":"offline"}</span></div>
-        <div class="team-wrap" style="margin-top:.5rem">${cells}</div>
-      </div>
-      <hr>
-    `;
-  }).join("") || `<div class="helper">Noch keine Spieler</div>`;
-}
-
-// ---------------- Global → Local Spiegelung ----------------
-function applyGlobalToLocal(st) {
-  // nutzt deinen lokalen State/Renderer (state, save, renderTeam, renderBox, renderBoxDrawer, renderRouteGroups)
-  const S = window.state;
-  if (!S || !Array.isArray(S.team) || !Array.isArray(S.box)) return;
-
-  // Map route -> slot (global)
-  const r2s = new Map((st.routeSlots||[]).map(x => [x.route, x.slot]));
-  // Map route -> uid (lokale Box)
-  const uidByRoute = new Map(S.box.map(m => [m.routeName, m.uid]));
-
-  const newTeam = [null,null,null,null,null,null];
-  for (const [route, slot] of r2s.entries()) {
-    if (slot >= 1 && slot <= 6) {
-      newTeam[slot-1] = uidByRoute.get(route) || null;
-    }
+    out.push({ name, ord: ord ?? autoOrd++ });
   }
 
-  // Setze isInTeam-Flags konsistent
-  S.box.forEach(m => { m.isInTeam = false; });
-  newTeam.forEach(uid => {
-    const mon = S.box.find(m => m.uid === uid);
-    if (mon) mon.isInTeam = true;
-  });
-
-  // Nur aktualisieren, wenn sich etwas ändert (minimiert Flackern)
-  const changed = newTeam.some((v, i) => v !== S.team[i]);
-  if (changed) {
-    S.team = newTeam;
-    try {
-      window.save?.();
-      window.renderTeam?.();
-      window.renderRouteGroups?.();
-      window.renderBox?.();
-      window.renderBoxDrawer?.();
-    } catch (_) {}
-  }
+  return out;
 }
 
-// ---------------- Fallback-Hooks (kein doppelter UI, nur Verhalten) ----------------
+// ---------- Klick-Handler: Datei wählen → parsen → hochladen ----------
+async function handleUploadRoutesClick(e){
+  e?.preventDefault?.();
 
-// 1) Box-Dragstart: falls deine Renderer die Route nicht mitsenden, ergänzen wir sie hier zentral.
-document.addEventListener("dragstart", e => {
-  const card = e.target?.closest?.("[data-uid]");
-  if (!card || !window.state?.box) return;
-  const uid = card.getAttribute("data-uid");
-  const mon = window.state.box.find(m => m.uid === uid);
-  if (!mon) return;
-  try {
-    card.setAttribute("data-route", mon.routeName);           // für spätere Hydration
-    e.dataTransfer?.setData?.("text/route", mon.routeName);   // wichtig für globalen Drop
-  } catch (_) {}
-}, true);
+  // File-Input einmalig anlegen
+  let picker = document.getElementById('routePicker');
+  if (!picker) {
+    picker = document.createElement('input');
+    picker.type = 'file';
+    picker.id = 'routePicker';
+    picker.accept = '.txt,.csv,text/plain,text/csv';
+    picker.style.display = 'none';
+    document.body.appendChild(picker);
+  }
 
-// 2) Team-Drop: falls dein Click/Drop-Handler NICHT selbst NZ.assignGlobalSlot aufruft,
-// setzen wir das globale Mapping hier als Fallback.
-(function hookTeamDropFallback(){
-  const wrap = document.querySelector("#teamWrap");
-  if (!wrap) return;
-  wrap.addEventListener("drop", async e => {
-    const slotEl = e.target?.closest?.(".slot[data-index]");
-    if (!slotEl) return;
-    // Slot-Index in deinem Code ist 0..5 – global erwarten wir 1..6
-    const slot = Number(slotEl.getAttribute("data-index"));
-    const route = e.dataTransfer?.getData?.("text/route");
-    if (!route || Number.isNaN(slot)) return;
+  picker.onchange = async () => {
+    const file = picker.files?.[0];
+    if (!file) return;
+
     try {
-      if (window.NZ) await window.NZ.assignGlobalSlot(route, slot + 1);
+      const text = await file.text();
+      const routes = parseRoutesText(text);
+      if (!routes.length) { alert('Die Datei enthält keine verwertbaren Routen.'); return; }
+
+      const mode = 'merge'; // oder 'replace'
+      const code = (typeof nzLobbyCode !== 'undefined' && window.nzLobbyCode) ? nzLobbyCode
+                  : (typeof currentLobbyCode === 'function' ? currentLobbyCode() : null);
+                 
+      if (!code) { alert('Kein Lobby-Code gefunden.'); return; }
+
+      await window.nzApi('uploadRoutes', { code, routes, mode });
+
+      if (typeof renderRoutes === 'function') await renderRoutes();
+      //alert(`Upload erfolgreich: ${routes.length} Routen (${mode}).`);
+      PokeBanner.warn('Alle Spieler müssen der Lobby erneut beitreten!', { duration: 0 });
+      PokeBanner.warn('<b style="color:red">Lobby</b> -> <b style="color:red">Einstellungen</b> -> <b style="color:red">Lobby beitreten</b>', { duration: 0 });
+      setTimeout(() => window.quickjoin?.(window.nzLobbyCode), 1000);
     } catch (err) {
-      console.error("[NZ] fallback assign failed:", err);
+      console.error(err);
+      PokeBanner.warn('Upload fehlgeschlagen: ' + (err?.message || err), { duration: 0 });
+      //alert('Upload fehlgeschlagen: ' + (err?.message || err));
+    } finally {
+      picker.value = ''; // erneutes Hochladen derselben Datei erlauben
     }
-  }, true);
-})();
+  };
 
-// ---------------- Heartbeat & Sync ----------------
-async function heartbeat(){
-  if (playerId && lobbyCode) {
-    try { await api("heartbeat", { playerId, code:lobbyCode }); } catch(_) {}
-  }
+  picker.click();
+  
 }
-async function sync(){
-  if (!lobbyCode) { renderLobby({ code:"", players:[] }); return; }
-  try {
-    const st = await listState(lobbyCode);
-    renderLobby(st);
-    renderAllTeams(st);
-    applyGlobalToLocal(st);
-  } catch (e) {
-    console.error("[NZ] sync failed:", e);
-  }
-}
-setInterval(heartbeat, HEARTBEAT_MS);
-setInterval(sync, POLL_MS);
 
-// ---------------- Auto-Join ----------------
-(async()=>{
-  const urlCode = (new URL(location.href)).searchParams.get("code");
-  if (urlCode) { lobbyCode = urlCode.toUpperCase(); localStorage.setItem("lobbyCode", lobbyCode); }
-  if (lobbyCode && !playerId) {
-    const nm = playerName || prompt("Dein Name?") || "Spieler";
-    playerName = nm; localStorage.setItem("playerName", nm);
-    const j = await api("joinLobby", { name:nm, code:lobbyCode });
-    playerId = j.player.id; localStorage.setItem("playerId", playerId);
-  }
-  await sync();
-})();
-
-// ---------------- Public Hooks (für dein anderes Skript) ----------------
-window.NZ = {
-  async upsertPokemon(route, species, caught=true){
-    if (!playerId) {
-      const nm = playerName || prompt("Dein Name?") || "Spieler";
-      const j = await api("joinLobby", { name:nm, code:lobbyCode });
-      playerId = j.player.id; localStorage.setItem("playerId", playerId);
-    }
-    await api("upsertPokemon", { playerId, route, species, caught });
-    await sync();
-  },
-  async assignGlobalSlot(route, slot){
-    if (!lobbyCode) return alert("Keine Lobby. Bitte im Lobby-Tab beitreten.");
-    await api("assignRouteSlot", { code:lobbyCode, route, slot });
-    await sync();
-  },
-  get me(){ return { playerId, playerName, lobbyCode } }
-};
+// Global machen, damit inline onclick sie findet
+window.parseRoutesText = parseRoutesText;
+window.handleUploadRoutesClick = handleUploadRoutesClick;

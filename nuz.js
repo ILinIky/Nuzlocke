@@ -1644,8 +1644,18 @@ function nzRenderLobby(st){
               <span class="poke-ball" aria-hidden="true"></span>
               <input id="nzName" type="text" hidden="true" placeholder="Dein Name" value="${_esc(name)}" readonly>
 <button id="nzRename" class="btn warn" style="display:none" title="Name ändern">TEST</button>
-<button id="themeBtn" class="btn warn" title="Name ändern">Theme ändern</button>
+<button id="themeBtn" class="btn warn" title="Theme ändern">Theme ändern</button>
 <button id="renameBtn" class="btn warn" title="Name ändern">Name ändern</button>
+<button id="uploadRoutes"
+        onclick="handleUploadRoutesClick(event)"
+        class="btn warn" title="Routes hochladen">
+  Upload Routes
+</button>
+<button id="uploadRoutes"
+        onclick="downloadRoutesSample(event)"
+        class="btn warn" title="⬇ download routes">
+  ⬇ Download
+</button>
 <button id="nzCreate" style="display:none" class="btn ok">Erstellen</button>
 <button id="nzJoin" style="display:none" class="btn">${joinLabel}</button>
             </div>
@@ -2192,6 +2202,7 @@ async function nzSync(){
 
     // ▼ zusätzlich merken --> Anzeige des momentanen Picks in der Lobby
     window.nzLastListState = st;
+    window.nzLobbyCode = nzLobbyCode;
     try { window._refillBoxViewerOptions?.(); } catch(_){}
     try { renderBox(); } catch(_){}
     //BADGE ADDON START
@@ -2712,6 +2723,130 @@ function checkifpokemonisusable(routeName, st = window.nzLastListState){
 
 
 
+
+/**
+ * Beobachtet window.nzLastListState und räumt Slots auf,
+ * sobald ein Mon von dir (pid) in boxes den Status 'false_by_others' oder 'dead' hat.
+ * 
+ * Public API:
+ *   startBadStatusWatcher({intervalMs})
+ *   stopBadStatusWatcher()
+ *   START 
+ */
+
+(function(){
+  const BAD = new Set(['false_by_others', 'dead']);
+  let timer = null;
+  const inFlight = new Set();     // key: `${pid}::${route}` -> verhindert Doppel-Calls
+  const alerted  = new Set();     // key: `${pid}::${route}` -> verhindert Doppel-Alerts
+
+  function getPid(state){
+    // Versuch 1: global bekannte Variablen/Funktionen
+    if (window.nzPlayerId) return String(window.nzPlayerId);
+    if (typeof window.currentPlayerId === 'function') {
+      try { const v = window.currentPlayerId(); if (v) return String(v); } catch {}
+    }
+    // Versuch 2: ggf. im State selbst (falls du es dort ablegst)
+    if (state && state.me && state.me.id) return String(state.me.id);
+    // No PID -> kein Eingriff möglich
+    return null;
+  }
+
+  function bannerWarn(msg){
+    if (window.PokeBanner?.warn) window.PokeBanner.warn(msg);
+    else alert(msg);
+  }
+
+  async function clearSlotIfNeeded(state, pid, route){
+    const key = `${pid}::${route}`;
+    if (inFlight.has(key)) return;
+    inFlight.add(key);
+    try{
+      // Prüfen, ob die Route wirklich in einem Slot von pid liegt
+      const hasSlot = Array.isArray(state.routeSlots) && state.routeSlots.some(
+        s => String(s.player_id) === String(pid) && String(s.route) === String(route)
+      );
+      if (!hasSlot) return;
+
+      // Server call
+      const code = state.code || '';
+      if (!code) return;
+
+      const res = await window.nzApi?.('clearRouteSlot', { code, pid, route });
+      if (res?.ok) {
+        if (!alerted.has(key)) {
+          alerted.add(key);
+         // bannerWarn(`Slot für "${route}" wurde entfernt, da der Status auf '${state.boxes?.[pid]?.[route]?.caught}' steht.`);
+          //PokeBanner.warn(`Route <b style="color:red">${route}</b> wurde entfernt, da die Route besiegt wurde!`, { duration: 0 }); // sticky
+          PokeBanner.show({
+            title: 'OH!',
+            message: `Route <b style="color:red">${route}</b> wurde entfernt, da die Route besiegt wurde!`,
+            variant: 'info',
+            actionText: 'Zum Team',
+            onAction: (close)=>{ setActiveTab?.('team'); close(); },
+            duration: 0
+          });
+        }
+        // Optional: lokalen UI-Refresh triggern
+        if (typeof window.renderRouteSlots === 'function') {
+          try { window.renderRouteSlots(); } catch {}
+        }
+      }
+    } catch (err){
+      console.error('[badStatusWatcher] clearRouteSlot failed:', err);
+    } finally {
+      inFlight.delete(key);
+    }
+  }
+
+  async function tick(){
+    const st = window.nzLastListState;
+    if (!st || !st.boxes) return;
+
+    const pid = getPid(st);
+    if (!pid) return;
+
+    const myBox = st.boxes[pid];
+    if (!myBox) return;
+
+    // Alle problematischen Routen von mir finden
+    for (const [route, entry] of Object.entries(myBox)) {
+      const status = String(entry?.caught ?? '').toLowerCase();
+      if (BAD.has(status)) {
+        // nur wenn aktuell in einem Slot -> räumen
+        await clearSlotIfNeeded(st, pid, route);
+      }
+    }
+  }
+
+  // Public controls
+  window.startBadStatusWatcher = function(opts = {}){
+    const { intervalMs = 2000 } = opts;
+    if (timer) clearInterval(timer);
+    timer = setInterval(tick, intervalMs);
+    // Direkt einmal prüfen
+    tick();
+    console.log('[badStatusWatcher] started, interval:', intervalMs);
+  };
+
+  window.stopBadStatusWatcher = function(){
+    if (timer) { clearInterval(timer); timer = null; }
+    console.log('[badStatusWatcher] stopped');
+  };
+})();
+startBadStatusWatcher({ intervalMs: 2500 });
+
+/**
+ * Beobachtet window.nzLastListState und räumt Slots auf,
+ * sobald ein Mon von dir (pid) in boxes den Status 'false_by_others' oder 'dead' hat.
+ * 
+ * Public API:
+ *   startBadStatusWatcher({intervalMs})
+ *   stopBadStatusWatcher()
+ *   ENDE 
+ */
+
+
 //ROUTES UTILITY LOAD DATA
 //END
 //ROUTES UTILITY LOAD DATA
@@ -2729,3 +2864,4 @@ PokeSelect.enhance('#boxViewerSelect', { placeholder: 'Box wählen…' });
   window.quickjoin = quickjoin; // <-- global verfügbar machen
   window.lobbycodefromurl = nzLobbyCode
   window.setActiveTab = setActiveTab; // <-- global verfügbar machen
+  window.nzApi = nzApi; // <-- global verfügbar machen

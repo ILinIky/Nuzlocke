@@ -17,7 +17,7 @@ window.nzLastListState --> wichtig
 (X) 9. Route erstellen disablen
 10. Bei import und export playerId
 (X) 11. Msg Boxen hinzufügen
-12. Vllt Menu oben besser?
+(X) 12. Vllt Menu oben besser?
 (X) 13. Scrollbalken bei Routes fixen
 14. TESTEN TESTEN TESTEN
 15. Box Icons ändern mit neuem failed
