@@ -4,7 +4,7 @@
     font-size:11px; font-weight:900; border:1px solid rgba(255,255,255,.2);
     background:#0f1a44; color:#e8ecff;
   }
-  .role-badge.host{ background:#f1f1f1; border-color:#f6f3f3; color:#0f0e0e }
+  .role-badge.host{ background:#eeae39; border-color:#2a20af; color:#0f0e0e }
   .role-badge.cohost{ background:#0a1f2a; border-color:#181818; color:#f9fafa }
   .role-badge.spectator{ background:#161616; border-color:#666; color:#aaa }
   

@@ -19,6 +19,7 @@ async function downloadRoutesSample(){
 }
 
 function parseRoutesText(rawText) {
+
   console.log('[parseRoutesText] parsing…');
   const text = String(rawText || '').trim();
   if (!text) return [];
@@ -88,6 +89,9 @@ function parseRoutesText(rawText) {
 
 // ---------- Klick-Handler: Datei wählen → parsen → hochladen ----------
 async function handleUploadRoutesClick(e){
+  if(!window.isHost) { 
+    PokeBanner.warn('Nur der Lobby Host kann die Routen hochladen.');
+    return; }
   e?.preventDefault?.();
 
   // File-Input einmalig anlegen

@@ -1840,7 +1840,7 @@ if (res.action === 'solo') {
       localStorage.setItem("lobbyCode", nzLobbyCode);
       history.replaceState(null,"",`?code=${nzLobbyCode}`);
       // in nzRenderLobby -> #nzCreate onclick:
-localStorage.setItem("nuz_isHost", "1");
+      localStorage.setItem("nuz_isHost", "1");
       await wipeRoutesAndReloadFromServer();   // ⬅️ bleibt wie gehabt
       await nzSync();
       setTimeout(() =>  PokeLoader.hide(), 2);
@@ -1970,6 +1970,7 @@ renameBtn?.addEventListener('click', openNameDialog);
       // Nur Host darf verwalten
       const me = (st.players||[]).find(p=> String(p.id)===String(window.nzPlayerId));
       const isHost = me?.role==='host' || (st.hostId && String(st.hostId)===String(window.nzPlayerId)) || localStorage.getItem('nuz_isHost')==='1';
+      window.isHost = isHost; // Debug
       if (!isHost) return;
   
       let menu;

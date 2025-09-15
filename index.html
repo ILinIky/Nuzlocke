@@ -22,7 +22,7 @@
   <script>
     //cleanupOnce();
   </script>
-    <script src="multiplayer.js"></script>
+    <script src="upload.js"></script>
   <script src="stable-player-id.js"></script>
   <script src="loader.js"></script>
   <script src="pokemon-msg.js" defer></script>
@@ -312,7 +312,7 @@ input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inse
 .btn:hover{ transform:translateY(-1px) }
 .btn.ok{ background:#0f3d33; border-color:#135e4e }
 .btn.bad{ background:#3a1414; border-color:#6a2222 }
-.btn.warn{ background:#3a320f; border-color:#6a5922 }
+.btn.warn{ background-color: rgb(from var(--ring) r g b / .55); /* 70% Deckkraft */ border-color:#6a5922 }
 .btn::after{
   content:""; position:absolute; inset:-160% -200%; pointer-events:none;
   background:linear-gradient(75deg, transparent 45%, rgba(255,255,255,.20) 50%, transparent 55%);
@@ -511,7 +511,7 @@ input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inse
 /* Optional: Refresh-Button im gleichen Look */
 .btn.ghost{
   border:1px solid rgba(255,255,255,.22);
-  background:#0c1330;
+  background:#0c1b30;
   color:#e8ecff;
   padding:10px 14px;
   border-radius:12px;
