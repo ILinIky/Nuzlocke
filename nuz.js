@@ -2551,9 +2551,9 @@ async function clickCreateLobby(){
     //quickjoin('JFHUET');
     //return;
     try {
-      const code = new URL(location.href).searchParams.get('code') || '';
-      if (!code) { alert('Kein Lobby-Code in der URL gefunden.'); return; }
-      navigator.clipboard.writeText(code.toUpperCase());
+      //const code = new URL(location.href).searchParams.get('code') || '';
+      //f (!code) { alert('Kein Lobby-Code in der URL gefunden.'); return; }
+      navigator.clipboard.writeText(window.nzLobbyCode.toUpperCase());
       // Optional: toast('Code kopiert!');
       PokeBanner.ok('Code kopiert!');
     } catch (e) {
