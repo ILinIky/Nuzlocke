@@ -654,7 +654,7 @@ async function uploadRoutes({ code, routes }) {
     const n = Number(r.ord);
     const ord = Number.isInteger(n) ? n : NaN;
     if (!Number.isInteger(ord)) throw new Error(`ord must be an integer (got: ${r.ord})`);
-    if (ord < 0 || ord > 55) throw new Error(`ord out of range (0..55): ${ord}`);
+    if (ord < 1 || ord > 55) throw new Error(`ord out of range (1..55): ${ord}`);
     if (ordSet.has(ord)) throw new Error(`duplicate ord in payload: ${ord}`);
     ordSet.add(ord);
 
