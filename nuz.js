@@ -1117,6 +1117,11 @@ card.innerHTML = `
 async function evolvePokemon(monUid){
   const mon = state.box.find(x => x.uid === monUid);
   if (!mon) return;
+<<<<<<< codex/optimize-nuzlocke-code-and-features-jj7i7m
+  const spriteHost = document.querySelector(`#boxGrid [data-uid="${monUid}"] .poke-sprite`) || document.querySelector('#encSprite');
+  await RouteFX.evolveFlash(spriteHost);
+=======
+>>>>>>> main
   const nextName = await getNextEvolution(mon.name);
   if (!nextName) {
     PokeBanner.warn(`${toTitle(mon.name)} kann aktuell nicht weiterentwickelt werden.`);
@@ -1183,7 +1188,11 @@ function renderBox(){
             <div class="tag">${mon.routeName} + ${mon.type}</div>
           </div>
           <div class="row" style="gap:8px;align-items:center">
+<<<<<<< codex/optimize-nuzlocke-code-and-features-jj7i7m
+            <button class="btn" data-evolve>Entwickeln</button>
+=======
             <button class="btn" data-evolve>Evolve</button>
+>>>>>>> main
             <button class="btn bad" style="display:none" data-remove>Entfernen</button>
           </div>
         </div>
@@ -1276,6 +1285,136 @@ function renderBox(){
 }
 
 
+
+function getTeamEligibleMons(){
+  const code = currentLobbyCode();
+  const mons = state.box.filter(m => (!code || m.lobbyCode === code));
+  return mons.filter(m => {
+    if (!m?.routeName) return false;
+    const usable = checkifpokemonisusable(m.routeName);
+    return usable === true;
+  });
+}
+
+async function placeMonInTeamSlot(mon, slotIndex){
+  if (!mon) return false;
+  const i = Number(slotIndex);
+  if (!Number.isInteger(i) || i < 0 || i > 5) return false;
+
+  const res = checkifpokemonisusable(mon.routeName);
+  if (res !== true) {
+    setTimeout(() => PokeBanner.warn(`Diese Route ist durch <b style="color:orange">${res.join(', ')}</b> nicht mehr verfügbar!`), 5);
+    return false;
+  }
+
+  const targetSlot = i + 1;
+  const route = mon.routeName || '';
+  const prevUid = state.team[i];
+  const prevMon = prevUid ? state.box.find(m=>m.uid===prevUid) : null;
+
+  const already = state.team.findIndex(u=>u===mon.uid);
+  if(already>=0){
+    const back = state.team[i];
+    state.team[already] = back || null;
+  }
+  if(prevMon) prevMon.isInTeam = false;
+  state.team[i] = mon.uid;
+  mon.isInTeam = true;
+  selectedFromBoxUid = null;
+
+  save(); renderTeam(); renderBox(); renderBoxDrawer(); renderRouteGroups();
+  $('#pickHint').style.display = 'none';
+
+  try {
+    if (window.NZ && route) {
+      await window.NZ.ensureJoined();
+      holdSync(1500);
+      await window.NZ.setRouteSlot(route, targetSlot);
+      await window.NZ.upsertPokemon(route, toTitle(mon.name), true);
+      await window.NZ.syncNow?.();
+    }
+  } catch (err) {
+    console.error('[NZ] team place sync failed:', err);
+  }
+  return true;
+}
+
+function ensureTeamPickerBar(){
+  const wrap = document.querySelector('#teamWrap');
+  if (!wrap || !wrap.parentElement) return;
+
+  let bar = document.getElementById('teamPickerBar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'teamPickerBar';
+    bar.className = 'box-viewer-bar team-picker-bar';
+    bar.innerHTML = `
+      <div class="box-viewer-row" style="gap:10px;align-items:center;flex-wrap:wrap">
+        <label class="lbl" style="margin:0">Team Auswahl</label>
+        <span class="pk-select"><select id="teamPickSelect"></select></span>
+        <span class="pk-select"><select id="teamPickSlot">
+          <option value="0">Slot 1</option><option value="1">Slot 2</option><option value="2">Slot 3</option>
+          <option value="3">Slot 4</option><option value="4">Slot 5</option><option value="5">Slot 6</option>
+        </select></span>
+        <button id="teamPickApply" class="btn ok">In Slot setzen</button>
+        <button id="teamAutoFill" class="btn ghost">Auto Team</button>
+      </div>
+    `;
+    wrap.parentElement.insertBefore(bar, wrap);
+  }
+
+  const selMon = bar.querySelector('#teamPickSelect');
+  const selSlot = bar.querySelector('#teamPickSlot');
+  const btnApply = bar.querySelector('#teamPickApply');
+  const btnAuto = bar.querySelector('#teamAutoFill');
+
+  const mons = getTeamEligibleMons();
+  const active = selectedFromBoxUid || localStorage.getItem('teamPickMonUid') || '';
+  selMon.innerHTML = '<option value="">Pokémon wählen…</option>';
+  mons.forEach(m => {
+    const inTeam = state.team.includes(m.uid) ? ' • im Team' : '';
+    const opt = new Option(`#${m.id} ${toTitle(m.name)} (${m.routeName})${inTeam}`, m.uid);
+    selMon.appendChild(opt);
+  });
+  selMon.value = Array.from(selMon.options).some(o=>o.value===active) ? active : '';
+  btnApply.disabled = !selMon.value;
+
+  const suggested = state.team.findIndex(x=>!x);
+  selSlot.value = String(suggested >= 0 ? suggested : 0);
+
+  if (!bar.dataset.ready) {
+    bar.dataset.ready = '1';
+    selMon.addEventListener('change', ()=>{
+      selectedFromBoxUid = selMon.value || null;
+      btnApply.disabled = !selMon.value;
+      if (selMon.value) localStorage.setItem('teamPickMonUid', selMon.value);
+      else localStorage.removeItem('teamPickMonUid');
+      renderBoxDrawer();
+    });
+
+    btnApply.addEventListener('click', async ()=>{
+      const mon = state.box.find(m=>m.uid===selMon.value);
+      if (!mon) { PokeBanner.warn('Bitte zuerst ein Pokémon auswählen.'); return; }
+      await placeMonInTeamSlot(mon, Number(selSlot.value));
+      renderTeam();
+    });
+
+    btnAuto.addEventListener('click', async ()=>{
+      const freeSlots = state.team.map((x,i)=>x?null:i).filter(x=>x!==null);
+      if (!freeSlots.length) { PokeBanner.warn('Team ist bereits voll.'); return; }
+      const candidates = getTeamEligibleMons().filter(m=>!state.team.includes(m.uid));
+      if (!candidates.length) { PokeBanner.warn('Keine passenden Pokémon für Auto Team gefunden.'); return; }
+      let placed = 0;
+      for (let i=0; i<freeSlots.length && i<candidates.length; i++) {
+        const ok = await placeMonInTeamSlot(candidates[i], freeSlots[i]);
+        if (ok) placed++;
+      }
+      if (placed) PokeBanner.ok(`${placed} Pokémon automatisch ins Team gesetzt.`);
+      renderTeam();
+    });
+  }
+}
+
 /* ---------- Team ---------- */
 function renderTeam(){
     if (renderLock) {
@@ -1283,6 +1422,7 @@ function renderTeam(){
         return;
       }
   const wrap = $('#teamWrap'); if (!wrap) return;
+  ensureTeamPickerBar();
   wrap.innerHTML = '';
   for(let i=0;i<6;i++){
     const uidRef = state.team[i];
@@ -1307,132 +1447,19 @@ function renderTeam(){
     slot.addEventListener('dragover', e=>{ e.preventDefault(); slot.classList.add('over'); });
     slot.addEventListener('dragleave', ()=>slot.classList.remove('over'));
     slot.addEventListener('drop', async e=>{
-      
-      
-     
-      
       e.preventDefault(); slot.classList.remove('over');
       const uid = e.dataTransfer.getData('text/plain');
       const mon = state.box.find(m=>m.uid===uid);
-      
-
-      const res = checkifpokemonisusable(mon.routeName); // nutzt window.nzLastListState
-      if (res === true) {
-      }else {
-        
-        setTimeout(() =>   PokeBanner.warn(`Diese Route ist durch <b style="color:orange">${res.join(', ')}</b> nicht mehr verfügbar!`), 5);
-        return;
-      }
       if(!mon) return;
-
-      const targetSlot = i + 1;
-      const route = mon.routeName || e.dataTransfer.getData('text/route') || '';
-
-      // Vorheriger Inhalt in DIESEM Slot
-      const prevUid = state.team[i];
-      const prevMon = prevUid ? state.box.find(m=>m.uid===prevUid) : null;
-      const prevRoute = prevMon?.routeName || null;
-
-      // Lokal updaten
-      const already = state.team.findIndex(u=>u===uid);
-      if(already>=0){
-        const back = state.team[i];
-        state.team[already] = back || null;
-      }
-      if(prevMon) prevMon.isInTeam = false;
-      state.team[i] = uid; 
-      mon.isInTeam = true; 
-      selectedFromBoxUid = null;
-
-      save(); 
-      renderTeam(); 
-      renderBox(); 
-      renderBoxDrawer(); 
-      renderRouteGroups();
-      renderLock = true;
-      $('#pickHint').style.display = 'none';
-
-      // Server: idempotent & atomisch
-      // --- Server: idempotent & atomisch
-try {
- 
-    if (window.NZ && route) {
-      await window.NZ.ensureJoined();
-      holdSync(1500);
-  
-      // Route→Slot setzen (robust)
-      await window.NZ.setRouteSlot(route, targetSlot);
-      // species/caught updaten
-      await window.NZ.upsertPokemon(route, toTitle(mon.name), true);
-  
-      await window.NZ.syncNow?.();
-      renderLock = false;
-      renderTeam(); renderBox(); renderBoxDrawer(); renderRouteGroups();
-      console.log("🔓 renderTeam() ist wieder freigegeben.");
-
-    }
-  } catch (err) {
-    console.error('[NZ] drop sync failed:', err);
-    renderLock = false;
-    renderTeam(); renderBox(); renderBoxDrawer(); renderRouteGroups();
-    console.log("🔓 renderTeam() ist wieder freigegeben.");
-  }
+      await placeMonInTeamSlot(mon, i);
     });
 
     // Click-to-place
     slot.addEventListener('click', async ()=>{
-    
-     
       if(!selectedFromBoxUid) return;
       const pick = state.box.find(m=>m.uid===selectedFromBoxUid);
-      console.warn('[NZ] drop event:', pick);
-
-      const res = checkifpokemonisusable(pick.routeName); // nutzt window.nzLastListState
-      if (res === true) {
-      }else {
-        setTimeout(() =>   PokeBanner.warn(`Diese Route ist durch <b style="color:orange">${res.join(', ')}</b> nicht mehr verfügbar! :)`), 5);
-        return;
-      }
-
-
       if(!pick) return;
-
-      const targetSlot = i + 1;
-      const route = pick.routeName || '';
-
-      // Vorheriger Inhalt
-      const prevUid = state.team[i];
-      const prevMon = prevUid ? state.box.find(m=>m.uid===prevUid) : null;
-      const prevRoute = prevMon?.routeName || null;
-
-      // Lokal
-      const already = state.team.findIndex(u=>u===pick.uid);
-      if(already>=0){
-        const back = state.team[i];
-        state.team[already] = back || null;
-      }
-      if(prevMon) prevMon.isInTeam = false;
-      state.team[i] = pick.uid; 
-      pick.isInTeam = true; 
-      selectedFromBoxUid = null;
-
-      save(); renderTeam(); renderBox(); renderBoxDrawer(); renderRouteGroups();
-      $('#pickHint').style.display = 'none';
-
-      // Server
-      try {
-        if (window.NZ && route) {
-          await window.NZ.ensureJoined();
-          holdSync(1500);
-      
-          await window.NZ.setRouteSlot(route, targetSlot);
-          await window.NZ.upsertPokemon(route, toTitle(pick.name), true);
-      
-          await window.NZ.syncNow?.();
-        }
-      } catch (err) {
-        console.error('[NZ] click sync failed:', err);
-      }
+      await placeMonInTeamSlot(pick, i);
     });
 
     // Remove-Button
