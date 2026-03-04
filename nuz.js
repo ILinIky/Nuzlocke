@@ -1125,9 +1125,7 @@ card.innerHTML = `
 async function evolvePokemon(monUid){
   const mon = state.box.find(x => x.uid === monUid);
   if (!mon) return;
-  const spriteSel = "#boxGrid [data-uid=\"" + monUid + "\"] .poke-sprite";
-  const spriteHost = document.querySelector(spriteSel) || document.querySelector('#encSprite');
-  await RouteFX.evolveFlash(spriteHost);
+  
   const nextName = await getNextEvolution(mon.name);
   if (!nextName) {
     PokeBanner.warn(`${toTitle(mon.name)} kann aktuell nicht weiterentwickelt werden.`);
@@ -1194,7 +1192,8 @@ function renderBox(){
             <div class="tag">${mon.routeName} + ${mon.type}</div>
           </div>
           <div class="row" style="gap:8px;align-items:center">
-            <button class="btn" data-evolve>Entwickeln</button>
+            <button class="btn" data-evolve>Evolve</button>
+
             <button class="btn bad" style="display:none" data-remove>Entfernen</button>
           </div>
         </div>
@@ -1353,11 +1352,11 @@ function ensureTeamPickerBar(){
     bar.innerHTML = `
       <div class="box-viewer-row" style="gap:10px;align-items:center;flex-wrap:wrap">
         <label class="lbl" style="margin:0">Team Auswahl</label>
-        <select id="teamPickSelect"></select>
-        <select id="teamPickSlot">
+        <span class="pk-select"><select id="teamPickSelect"></select></span>
+        <span class="pk-select"><select id="teamPickSlot">
           <option value="0">Slot 1</option><option value="1">Slot 2</option><option value="2">Slot 3</option>
           <option value="3">Slot 4</option><option value="4">Slot 5</option><option value="5">Slot 6</option>
-        </select>
+        </select></span>
         <button id="teamPickApply" class="btn ok">In Slot setzen</button>
         <button id="teamAutoFill" class="btn ghost">Auto Team</button>
       </div>
@@ -1383,15 +1382,6 @@ function ensureTeamPickerBar(){
 
   const suggested = state.team.findIndex(x=>!x);
   selSlot.value = String(suggested >= 0 ? suggested : 0);
-
-  if (window.PokeSelect) {
-    try {
-      if (!selMon.classList.contains('ps-hidden')) window.PokeSelect.enhance(selMon, { placeholder:'Pokémon wählen…', searchable:true });
-      if (!selSlot.classList.contains('ps-hidden')) window.PokeSelect.enhance(selSlot, { placeholder:'Slot wählen…', searchable:false });
-      selMon.dispatchEvent(new Event('change', { bubbles:true }));
-      selSlot.dispatchEvent(new Event('change', { bubbles:true }));
-    } catch(_) {}
-  }
 
   if (!bar.dataset.ready) {
     bar.dataset.ready = '1';
