@@ -896,7 +896,7 @@ function renderEncounter(){
   const e = rt.encounter;
   const localStatus = normalizeEncounterStatus(e.status);
 
-  const listHtml = pokedex.slice(0,1025).map(p=>`<option value="${toTitle(p.name)}" data-id="${p.id}"></option>`).join('');
+  const listHtml = pokedex.slice(0,1025).map(p=>`<option value="${p.name}">${toTitle(p.name)}</option>`).join('');
   const hasMon = !!e.pokemonId;
 
   pane.innerHTML = `
@@ -906,8 +906,10 @@ function renderEncounter(){
           <div class="sprite" id="encSprite">${hasMon?`<img alt="${toTitle(e.pokemonName)}" src="${e.sprite}">`:''}</div>
           <div>
             <div class="row">
-              <input list="pokedexList" id="pokeSearch" type="search" placeholder="Pokémon wählen…" value="${hasMon?toTitle(e.pokemonName):''}">
-              <datalist id="pokedexList">${listHtml}</datalist>
+              <select id="pokeSearch">
+                <option value="">Pokémon wählen…</option>
+                ${listHtml}
+              </select>
               <input id="nickname" type="text" placeholder="Spitzname (optional)" value="${e.nickname||''}" autocomplete="off">
             </div>
             <div class="row" style="margin-top:10px">
@@ -953,10 +955,8 @@ function renderEncounter(){
 
   function resolvePokemon(str){
     if(!str) return null;
-    const name = str.trim().toLowerCase();
-    let found = pokedex.find(p=>p.name===name);
-    if(!found) found = pokedex.find(p=>toTitle(p.name)===str.trim());
-    return found || null;
+    const name = String(str).trim().toLowerCase();
+    return pokedex.find(p=>p.name===name) || null;
   }
   function updatePreview(){
     const chosen = resolvePokemon(search.value);
@@ -967,7 +967,15 @@ function renderEncounter(){
     const types = chosen ? getTypesByNameFromLocal(chosen.name) : [];
     RouteFX.applyTypeAura($('#encSprite'), types[0] || null);
   }
-  search.addEventListener('input', updatePreview);
+
+  if (hasMon && e.pokemonName) {
+    search.value = String(e.pokemonName).toLowerCase();
+  }
+  search.addEventListener('change', updatePreview);
+
+  if (window.PokeSelect && !search.classList.contains('ps-hidden')) {
+    try { window.PokeSelect.enhance(search, { placeholder:'Pokémon wählen…', searchable:true }); } catch(_) {}
+  }
 
   btnCaught.onclick = async ()=>{
    
