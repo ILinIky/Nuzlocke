@@ -1117,8 +1117,6 @@ card.innerHTML = `
 async function evolvePokemon(monUid){
   const mon = state.box.find(x => x.uid === monUid);
   if (!mon) return;
-  const spriteHost = document.querySelector(`#boxGrid [data-uid="${monUid}"] .poke-sprite`) || document.querySelector('#encSprite');
-  await RouteFX.evolveFlash(spriteHost);
   const nextName = await getNextEvolution(mon.name);
   if (!nextName) {
     PokeBanner.warn(`${toTitle(mon.name)} kann aktuell nicht weiterentwickelt werden.`);
@@ -1185,7 +1183,7 @@ function renderBox(){
             <div class="tag">${mon.routeName} + ${mon.type}</div>
           </div>
           <div class="row" style="gap:8px;align-items:center">
-            <button class="btn" data-evolve>Entwickeln</button>
+            <button class="btn" data-evolve>Evolve</button>
             <button class="btn bad" style="display:none" data-remove>Entfernen</button>
           </div>
         </div>
