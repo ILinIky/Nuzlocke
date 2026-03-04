@@ -525,6 +525,14 @@ window.RouteFX = (() => {
       transform: translate(-50%,-50%) rotate(0deg);
       box-shadow:0 2px 6px rgba(0,0,0,.28);
     }
+
+    /* Evolution FX */
+    .rf-evo-flash{
+      position:absolute; inset:0; border-radius:12px; pointer-events:none; z-index:8;
+      background: radial-gradient(circle at 50% 50%, rgba(255,255,255,.8), rgba(127,140,255,.35) 45%, rgba(49,208,170,.08) 70%, transparent 100%);
+      mix-blend-mode: screen;
+      opacity:0;
+    }
   
     @media (prefers-reduced-motion: reduce){
       [type-aura]::before{ opacity:.10; filter:none }
@@ -735,6 +743,38 @@ window.RouteFX = (() => {
       ball.remove(); restore();
     }
   
+    async function evolveFlash(selOrEl){
+      ensureStyle();
+      const { box, img } = resolveTarget(selOrEl);
+      const targetBox = box || img;
+      const target = img || box;
+      if (!targetBox || !target) return;
+      const restore = ensureRel(targetBox);
+
+      const flash = document.createElement('div');
+      flash.className = 'rf-evo-flash';
+      targetBox.appendChild(flash);
+
+      const D = RM ? 500 : 920;
+      flash.animate([{opacity:0},{opacity:.95},{opacity:0}], {duration:D, easing:'ease-in-out', fill:'forwards'}).onfinish = ()=> flash.remove();
+
+      target.animate(
+        [
+          { transform:'scale(1) rotate(0deg)', filter:'brightness(1)' },
+          { transform:'scale(1.1) rotate(-2deg)', filter:'brightness(1.35) saturate(1.4)' },
+          { transform:'scale(.96) rotate(2deg)', filter:'brightness(1.2)' },
+          { transform:'scale(1.08) rotate(0deg)', filter:'brightness(1.3)' },
+          { transform:'scale(1) rotate(0deg)', filter:'brightness(1)' }
+        ],
+        { duration:D, easing:'cubic-bezier(.22,.7,.2,1)', fill:'both' }
+      );
+
+      sparkleAt(targetBox, RM ? 18 : 34, '#b0a4ff');
+      confetti(targetBox, { count: RM ? 14 : 28, colors:['#8b7bff','#31d0aa','#ffd23f','#d8ccff'] });
+      await wait(D);
+      restore();
+    }
+
     async function epicCatch(selOrEl, routeName=''){
       ensureStyle();
       const { box, img } = resolveTarget(selOrEl);
@@ -809,7 +849,8 @@ window.RouteFX = (() => {
       playCatch,
       playFail,
       throwBallAndCatch,
-      epicCatch
+      epicCatch,
+      evolveFlash
     };
   })();
 
@@ -1165,7 +1206,7 @@ function renderBox(){
         save(); renderBox(); renderTeam(); renderBoxDrawer(); renderRouteGroups();
       };
       card.addEventListener('click', (ev)=>{
-        if(ev.target.closest('[data-remove]')) return;
+        if(ev.target.closest('[data-remove]') || ev.target.closest('[data-evolve]')) return;
         selectedFromBoxUid = mon.uid;
         setActiveTab('team');
         renderTeam(); renderBoxDrawer(); renderRouteGroups();
