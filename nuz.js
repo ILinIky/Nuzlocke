@@ -385,6 +385,90 @@ const EMPTY_STATE = () => ({
 let state = null;
 let selectedFromBoxUid = null;
 
+const NZ_SFX_KEY = 'nuz_sfx_enabled_v1';
+const evoCache = new Map();
+
+function normalizeEncounterStatus(status){
+  if (status === 'true') return 'caught';
+  if (status === 'false') return 'failed';
+  return status || 'pending';
+}
+
+function buildTypeTag(name, suffix){
+  const types = getTypesByNameFromLocal(name);
+  const base = Array.isArray(types) && types.length ? types.join('/') : 'unknown';
+  return `${base},${suffix}`;
+}
+
+const NZAudio = (() => {
+  let ctx = null;
+  const enabled = () => localStorage.getItem(NZ_SFX_KEY) !== '0';
+  const ensure = () => {
+    if (!enabled()) return null;
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') ctx.resume().catch(()=>{});
+    return ctx;
+  };
+
+  function tone(freq, duration = 0.1, type = 'triangle', volume = 0.05, offset = 0){
+    const c = ensure();
+    if (!c) return;
+    const o = c.createOscillator();
+    const g = c.createGain();
+    o.type = type;
+    o.frequency.value = freq;
+    g.gain.value = 0;
+    o.connect(g);
+    g.connect(c.destination);
+    const t = c.currentTime + offset;
+    g.gain.linearRampToValueAtTime(volume, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.001, t + duration);
+    o.start(t);
+    o.stop(t + duration + 0.02);
+  }
+
+  return {
+    play(type){
+      if (type === 'catch'){ tone(660, .08); tone(880, .11, 'square', .04, .07); }
+      else if (type === 'fail'){ tone(240, .16, 'sawtooth', .05); }
+      else if (type === 'evolve'){ tone(440, .1); tone(554, .1, 'triangle', .04, .1); tone(740, .14, 'triangle', .045, .22); }
+      else if (type === 'click'){ tone(520, .05, 'square', .03); }
+    },
+    toggle(next){ localStorage.setItem(NZ_SFX_KEY, next ? '1' : '0'); }
+  };
+})();
+
+async function getNextEvolution(currentName){
+  const key = String(currentName || '').toLowerCase();
+  if (!key) return null;
+  if (evoCache.has(key)) return evoCache.get(key);
+  try {
+    const speciesRes = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${encodeURIComponent(key)}`);
+    if (!speciesRes.ok) return null;
+    const species = await speciesRes.json();
+    const chainRes = await fetch(species.evolution_chain.url);
+    if (!chainRes.ok) return null;
+    const chainData = await chainRes.json();
+
+    let target = null;
+    (function walk(node){
+      if (!node || target) return;
+      const nm = node.species?.name;
+      const evolvesTo = node.evolves_to || [];
+      if (nm === key && evolvesTo.length) {
+        target = evolvesTo[0].species?.name || null;
+        return;
+      }
+      evolvesTo.forEach(walk);
+    })(chainData.chain);
+
+    evoCache.set(key, target);
+    return target;
+  } catch {
+    return null;
+  }
+}
+
 function save(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
 function load(){ const s = localStorage.getItem(LS_KEY); state = s ? JSON.parse(s) : EMPTY_STATE(); }
 
@@ -440,6 +524,14 @@ window.RouteFX = (() => {
       position:absolute; width:8px; height:14px; border-radius:2px;
       transform: translate(-50%,-50%) rotate(0deg);
       box-shadow:0 2px 6px rgba(0,0,0,.28);
+    }
+
+    /* Evolution FX */
+    .rf-evo-flash{
+      position:absolute; inset:0; border-radius:12px; pointer-events:none; z-index:8;
+      background: radial-gradient(circle at 50% 50%, rgba(255,255,255,.8), rgba(127,140,255,.35) 45%, rgba(49,208,170,.08) 70%, transparent 100%);
+      mix-blend-mode: screen;
+      opacity:0;
     }
   
     @media (prefers-reduced-motion: reduce){
@@ -651,6 +743,38 @@ window.RouteFX = (() => {
       ball.remove(); restore();
     }
   
+    async function evolveFlash(selOrEl){
+      ensureStyle();
+      const { box, img } = resolveTarget(selOrEl);
+      const targetBox = box || img;
+      const target = img || box;
+      if (!targetBox || !target) return;
+      const restore = ensureRel(targetBox);
+
+      const flash = document.createElement('div');
+      flash.className = 'rf-evo-flash';
+      targetBox.appendChild(flash);
+
+      const D = RM ? 500 : 920;
+      flash.animate([{opacity:0},{opacity:.95},{opacity:0}], {duration:D, easing:'ease-in-out', fill:'forwards'}).onfinish = ()=> flash.remove();
+
+      target.animate(
+        [
+          { transform:'scale(1) rotate(0deg)', filter:'brightness(1)' },
+          { transform:'scale(1.1) rotate(-2deg)', filter:'brightness(1.35) saturate(1.4)' },
+          { transform:'scale(.96) rotate(2deg)', filter:'brightness(1.2)' },
+          { transform:'scale(1.08) rotate(0deg)', filter:'brightness(1.3)' },
+          { transform:'scale(1) rotate(0deg)', filter:'brightness(1)' }
+        ],
+        { duration:D, easing:'cubic-bezier(.22,.7,.2,1)', fill:'both' }
+      );
+
+      sparkleAt(targetBox, RM ? 18 : 34, '#b0a4ff');
+      confetti(targetBox, { count: RM ? 14 : 28, colors:['#8b7bff','#31d0aa','#ffd23f','#d8ccff'] });
+      await wait(D);
+      restore();
+    }
+
     async function epicCatch(selOrEl, routeName=''){
       ensureStyle();
       const { box, img } = resolveTarget(selOrEl);
@@ -725,7 +849,8 @@ window.RouteFX = (() => {
       playCatch,
       playFail,
       throwBallAndCatch,
-      epicCatch
+      epicCatch,
+      evolveFlash
     };
   })();
 
@@ -741,16 +866,16 @@ function renderRoutes(){
       div.className = 'route-item' + (currentRouteId===rt.id ? ' active' : '');
       div.dataset.routeName = rt.name;
   
-      const status = rt.encounter.status;
+      const status = normalizeEncounterStatus(rt.encounter.status);
       let statusText = 'offen', statusClass = 'pending';
-      if (status === 'true'){ statusText='CATCHED'; statusClass='caught'; }
-      else if (status === 'false'){ statusText='NOT CATCHED'; statusClass='failed';}
+      if (status === 'caught'){ statusText='CATCHED'; statusClass='caught'; }
+      else if (status === 'failed'){ statusText='NOT CATCHED'; statusClass='failed';}
       else if (status === 'dead'){ statusText='DEAD'; statusClass='dead'; } 
       else if (status === 'false_by_others'){ statusText='FAILED BY SOMEONE'; statusClass='failed_by_others';   
        }
-  
+
       div.innerHTML = `
-       <div class="route-item>
+       <div class="route-item">
   <div class="left">
     <span class="rname">${rt.name}</span>
     <span class="badge ${statusClass}">${statusText}</span>
@@ -769,6 +894,7 @@ function renderEncounter(){
   const rt = state.routes.find(r=>r.id===currentRouteId);
   if(!rt){ pane.innerHTML = '<p class="helper">Wähle links eine Route.</p>'; return; }
   const e = rt.encounter;
+  const localStatus = normalizeEncounterStatus(e.status);
 
   const listHtml = pokedex.slice(0,1025).map(p=>`<option value="${toTitle(p.name)}" data-id="${p.id}"></option>`).join('');
   const hasMon = !!e.pokemonId;
@@ -793,11 +919,11 @@ function renderEncounter(){
           </div>
         </div>
        <p class="helper" style="margin-top:10px">
-  Status: <b>${e.status==='pending'
+  Status: <b>${localStatus==='pending'
     ? 'Offen'
-    : e.status==='caught'
+    : localStatus==='caught'
       ? 'Gefangen'
-      : e.status==='dead'
+      : localStatus==='dead'
         ? 'DEAD'
         : 'Fehlversuch'}</b>
   ${e.updatedAt ? `• zuletzt aktualisiert: ${new Date(e.updatedAt).toLocaleString()}` : ''}
@@ -852,15 +978,16 @@ function renderEncounter(){
 await RouteFX.epicCatch('#encSprite', rt.name); // ← Animation
 btnClear.click()
     rt.encounter = {
-      status:'true', pokemonId: chosen.id, pokemonName: chosen.name, sprite: SPRITE(chosen.id), nickname: nick.value.trim(), updatedAt: now()
+      status:'caught', pokemonId: chosen.id, pokemonName: chosen.name, sprite: SPRITE(chosen.id), nickname: nick.value.trim(), updatedAt: now()
     };
     const exists = state.box.find(m=>m.routeName===rt.name);
     if(!exists){
       state.box.push({ uid:uid(), id:chosen.id, name:chosen.name, sprite:SPRITE(chosen.id), routeName:rt.name, nickname:nick.value.trim(), caughtAt:now(), isInTeam:false,
       lobbyCode: currentLobbyCode(),
-      type: getTypesByNameFromLocal(chosen.name)+',ALIVE'    // ⬅️ neu
+      type: buildTypeTag(chosen.name, 'ALIVE')
      });
     }
+    NZAudio.play('catch');
     
     save(); renderRoutes(); renderEncounter(); renderBox(); renderBoxDrawer(); renderRouteGroups();
 
@@ -882,15 +1009,16 @@ btnClear.click()
     await RouteFX.playFail('#encSprite');
 
     rt.encounter = {
-      status:'false', pokemonId: chosen.id, pokemonName: chosen.name, sprite: SPRITE(chosen.id), nickname: nick.value.trim(), updatedAt: now()
+      status:'failed', pokemonId: chosen.id, pokemonName: chosen.name, sprite: SPRITE(chosen.id), nickname: nick.value.trim(), updatedAt: now()
     };
     const exists = state.box.find(m=>m.routeName===rt.name);
     if(!exists){
       state.box.push({ uid:uid(), id:chosen.id, name:chosen.name, sprite:SPRITE(chosen.id), routeName:rt.name, nickname:nick.value.trim(), caughtAt:now(), isInTeam:false,
       lobbyCode: currentLobbyCode(),
-      type: getTypesByNameFromLocal(chosen.name)+',Failed'    // ⬅️ neu
+      type: buildTypeTag(chosen.name, 'FAILED')
      });
     }
+    NZAudio.play('fail');
     save(); renderRoutes(); renderEncounter(); renderBox(); renderBoxDrawer(); renderRouteGroups();
 
     // Server: species für "All Teams" aktualisieren
@@ -915,9 +1043,10 @@ btnClear.click()
     if(!exists){
       state.box.push({ uid:uid(), id:chosen.id, name:chosen.name, sprite:SPRITE(chosen.id), routeName:rt.name, nickname:nick.value.trim(), caughtAt:now(), isInTeam:false,
       lobbyCode: currentLobbyCode(),
-      type: getTypesByNameFromLocal(chosen.name)+',RIP BOX'    // ⬅️ neu
+      type: buildTypeTag(chosen.name, 'RIP BOX')
      });
     }
+    NZAudio.play('fail');
     save(); renderRoutes(); renderEncounter(); renderBox(); renderBoxDrawer(); renderRouteGroups();
 
     // Server: species für "All Teams" aktualisieren
@@ -984,6 +1113,46 @@ card.innerHTML = `
   });
 }
 
+
+async function evolvePokemon(monUid){
+  const mon = state.box.find(x => x.uid === monUid);
+  if (!mon) return;
+  const spriteSel = "#boxGrid [data-uid=\"" + monUid + "\"] .poke-sprite";
+  const spriteHost = document.querySelector(spriteSel) || document.querySelector('#encSprite');
+  await RouteFX.evolveFlash(spriteHost);
+  const nextName = await getNextEvolution(mon.name);
+  if (!nextName) {
+    PokeBanner.warn(`${toTitle(mon.name)} kann aktuell nicht weiterentwickelt werden.`);
+    return;
+  }
+  const nextId = getPokemonIdByName(nextName);
+  const oldName = mon.name;
+  if (!nextId) {
+    PokeBanner.warn(`Entwicklung gefunden (${toTitle(nextName)}), aber nicht im lokalen Pokédex.`);
+    return;
+  }
+
+  mon.id = nextId;
+  mon.name = nextName;
+  mon.sprite = SPRITE(nextId);
+  mon.type = buildTypeTag(nextName, mon.type?.includes('RIP BOX') ? 'RIP BOX' : (mon.type?.includes('FAILED') ? 'FAILED' : 'ALIVE'));
+  mon.evolvedAt = now();
+
+  state.routes.forEach(rt => {
+    if (rt.name === mon.routeName && rt.encounter?.pokemonId) {
+      rt.encounter.pokemonId = nextId;
+      rt.encounter.pokemonName = nextName;
+      rt.encounter.sprite = SPRITE(nextId);
+      rt.encounter.updatedAt = now();
+    }
+  });
+
+  NZAudio.play('evolve');
+  save();
+  renderRoutes(); renderEncounter(); renderBox(); renderTeam(); renderBoxDrawer(); renderRouteGroups();
+  PokeBanner.ok(`${toTitle(oldName)} hat sich zu ${toTitle(nextName)} entwickelt!`);
+}
+
 /* ---------- Box Tab ---------- */
 function renderBox(){
   const grid = $('#boxGrid'); if(!grid) return;
@@ -1016,7 +1185,10 @@ function renderBox(){
             <div class="poke-name">#${mon.id} ${toTitle(mon.name)} ${mon.nickname?`“${mon.nickname}”`:''}</div>
             <div class="tag">${mon.routeName} + ${mon.type}</div>
           </div>
-          <button class="btn bad" style="display:none" data-remove>Entfernen</button>
+          <div class="row" style="gap:8px;align-items:center">
+            <button class="btn" data-evolve>Entwickeln</button>
+            <button class="btn bad" style="display:none" data-remove>Entfernen</button>
+          </div>
         </div>
         <div class="poke-sprite"><img alt="${toTitle(mon.name)}" src="${mon.sprite}"></div>
       `;
@@ -1026,6 +1198,10 @@ function renderBox(){
         e.dataTransfer.setData('text/route', mon.routeName);
       });
       card.addEventListener('dragend', ()=>card.classList.remove('dragging'));
+      card.querySelector('[data-evolve]').onclick = async (ev)=>{
+        ev.stopPropagation();
+        await evolvePokemon(mon.uid);
+      };
       card.querySelector('[data-remove]').onclick = (ev)=>{
         ev.stopPropagation(); 
         if(mon.isInTeam){ PokeBanner.warn(`Dieses Pokémon ist im Team. Entferne es zuerst aus dem Team.`); return; }
@@ -1033,7 +1209,7 @@ function renderBox(){
         save(); renderBox(); renderTeam(); renderBoxDrawer(); renderRouteGroups();
       };
       card.addEventListener('click', (ev)=>{
-        if(ev.target.closest('[data-remove]')) return;
+        if(ev.target.closest('[data-remove]') || ev.target.closest('[data-evolve]')) return;
         selectedFromBoxUid = mon.uid;
         setActiveTab('team');
         renderTeam(); renderBoxDrawer(); renderRouteGroups();
@@ -1103,6 +1279,136 @@ function renderBox(){
 }
 
 
+
+function getTeamEligibleMons(){
+  const code = currentLobbyCode();
+  const mons = state.box.filter(m => (!code || m.lobbyCode === code));
+  return mons.filter(m => {
+    if (!m?.routeName) return false;
+    const usable = checkifpokemonisusable(m.routeName);
+    return usable === true;
+  });
+}
+
+async function placeMonInTeamSlot(mon, slotIndex){
+  if (!mon) return false;
+  const i = Number(slotIndex);
+  if (!Number.isInteger(i) || i < 0 || i > 5) return false;
+
+  const res = checkifpokemonisusable(mon.routeName);
+  if (res !== true) {
+    setTimeout(() => PokeBanner.warn(`Diese Route ist durch <b style="color:orange">${res.join(', ')}</b> nicht mehr verfügbar!`), 5);
+    return false;
+  }
+
+  const targetSlot = i + 1;
+  const route = mon.routeName || '';
+  const prevUid = state.team[i];
+  const prevMon = prevUid ? state.box.find(m=>m.uid===prevUid) : null;
+
+  const already = state.team.findIndex(u=>u===mon.uid);
+  if(already>=0){
+    const back = state.team[i];
+    state.team[already] = back || null;
+  }
+  if(prevMon) prevMon.isInTeam = false;
+  state.team[i] = mon.uid;
+  mon.isInTeam = true;
+  selectedFromBoxUid = null;
+
+  save(); renderTeam(); renderBox(); renderBoxDrawer(); renderRouteGroups();
+  $('#pickHint').style.display = 'none';
+
+  try {
+    if (window.NZ && route) {
+      await window.NZ.ensureJoined();
+      holdSync(1500);
+      await window.NZ.setRouteSlot(route, targetSlot);
+      await window.NZ.upsertPokemon(route, toTitle(mon.name), true);
+      await window.NZ.syncNow?.();
+    }
+  } catch (err) {
+    console.error('[NZ] team place sync failed:', err);
+  }
+  return true;
+}
+
+function ensureTeamPickerBar(){
+  const wrap = document.querySelector('#teamWrap');
+  if (!wrap || !wrap.parentElement) return;
+
+  let bar = document.getElementById('teamPickerBar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'teamPickerBar';
+    bar.className = 'box-viewer-bar team-picker-bar';
+    bar.innerHTML = `
+      <div class="box-viewer-row" style="gap:10px;align-items:center;flex-wrap:wrap">
+        <label class="lbl" style="margin:0">Team Auswahl</label>
+        <span class="pk-select"><select id="teamPickSelect"></select></span>
+        <span class="pk-select"><select id="teamPickSlot">
+          <option value="0">Slot 1</option><option value="1">Slot 2</option><option value="2">Slot 3</option>
+          <option value="3">Slot 4</option><option value="4">Slot 5</option><option value="5">Slot 6</option>
+        </select></span>
+        <button id="teamPickApply" class="btn ok">In Slot setzen</button>
+        <button id="teamAutoFill" class="btn ghost">Auto Team</button>
+      </div>
+    `;
+    wrap.parentElement.insertBefore(bar, wrap);
+  }
+
+  const selMon = bar.querySelector('#teamPickSelect');
+  const selSlot = bar.querySelector('#teamPickSlot');
+  const btnApply = bar.querySelector('#teamPickApply');
+  const btnAuto = bar.querySelector('#teamAutoFill');
+
+  const mons = getTeamEligibleMons();
+  const active = selectedFromBoxUid || localStorage.getItem('teamPickMonUid') || '';
+  selMon.innerHTML = '<option value="">Pokémon wählen…</option>';
+  mons.forEach(m => {
+    const inTeam = state.team.includes(m.uid) ? ' • im Team' : '';
+    const opt = new Option(`#${m.id} ${toTitle(m.name)} (${m.routeName})${inTeam}`, m.uid);
+    selMon.appendChild(opt);
+  });
+  selMon.value = Array.from(selMon.options).some(o=>o.value===active) ? active : '';
+  btnApply.disabled = !selMon.value;
+
+  const suggested = state.team.findIndex(x=>!x);
+  selSlot.value = String(suggested >= 0 ? suggested : 0);
+
+  if (!bar.dataset.ready) {
+    bar.dataset.ready = '1';
+    selMon.addEventListener('change', ()=>{
+      selectedFromBoxUid = selMon.value || null;
+      btnApply.disabled = !selMon.value;
+      if (selMon.value) localStorage.setItem('teamPickMonUid', selMon.value);
+      else localStorage.removeItem('teamPickMonUid');
+      renderBoxDrawer();
+    });
+
+    btnApply.addEventListener('click', async ()=>{
+      const mon = state.box.find(m=>m.uid===selMon.value);
+      if (!mon) { PokeBanner.warn('Bitte zuerst ein Pokémon auswählen.'); return; }
+      await placeMonInTeamSlot(mon, Number(selSlot.value));
+      renderTeam();
+    });
+
+    btnAuto.addEventListener('click', async ()=>{
+      const freeSlots = state.team.map((x,i)=>x?null:i).filter(x=>x!==null);
+      if (!freeSlots.length) { PokeBanner.warn('Team ist bereits voll.'); return; }
+      const candidates = getTeamEligibleMons().filter(m=>!state.team.includes(m.uid));
+      if (!candidates.length) { PokeBanner.warn('Keine passenden Pokémon für Auto Team gefunden.'); return; }
+      let placed = 0;
+      for (let i=0; i<freeSlots.length && i<candidates.length; i++) {
+        const ok = await placeMonInTeamSlot(candidates[i], freeSlots[i]);
+        if (ok) placed++;
+      }
+      if (placed) PokeBanner.ok(`${placed} Pokémon automatisch ins Team gesetzt.`);
+      renderTeam();
+    });
+  }
+}
+
 /* ---------- Team ---------- */
 function renderTeam(){
     if (renderLock) {
@@ -1110,6 +1416,7 @@ function renderTeam(){
         return;
       }
   const wrap = $('#teamWrap'); if (!wrap) return;
+  ensureTeamPickerBar();
   wrap.innerHTML = '';
   for(let i=0;i<6;i++){
     const uidRef = state.team[i];
@@ -1134,132 +1441,19 @@ function renderTeam(){
     slot.addEventListener('dragover', e=>{ e.preventDefault(); slot.classList.add('over'); });
     slot.addEventListener('dragleave', ()=>slot.classList.remove('over'));
     slot.addEventListener('drop', async e=>{
-      
-      
-     
-      
       e.preventDefault(); slot.classList.remove('over');
       const uid = e.dataTransfer.getData('text/plain');
       const mon = state.box.find(m=>m.uid===uid);
-      
-
-      const res = checkifpokemonisusable(mon.routeName); // nutzt window.nzLastListState
-      if (res === true) {
-      }else {
-        
-        setTimeout(() =>   PokeBanner.warn(`Diese Route ist durch <b style="color:orange">${res.join(', ')}</b> nicht mehr verfügbar!`), 5);
-        return;
-      }
       if(!mon) return;
-
-      const targetSlot = i + 1;
-      const route = mon.routeName || e.dataTransfer.getData('text/route') || '';
-
-      // Vorheriger Inhalt in DIESEM Slot
-      const prevUid = state.team[i];
-      const prevMon = prevUid ? state.box.find(m=>m.uid===prevUid) : null;
-      const prevRoute = prevMon?.routeName || null;
-
-      // Lokal updaten
-      const already = state.team.findIndex(u=>u===uid);
-      if(already>=0){
-        const back = state.team[i];
-        state.team[already] = back || null;
-      }
-      if(prevMon) prevMon.isInTeam = false;
-      state.team[i] = uid; 
-      mon.isInTeam = true; 
-      selectedFromBoxUid = null;
-
-      save(); 
-      renderTeam(); 
-      renderBox(); 
-      renderBoxDrawer(); 
-      renderRouteGroups();
-      renderLock = true;
-      $('#pickHint').style.display = 'none';
-
-      // Server: idempotent & atomisch
-      // --- Server: idempotent & atomisch
-try {
- 
-    if (window.NZ && route) {
-      await window.NZ.ensureJoined();
-      holdSync(1500);
-  
-      // Route→Slot setzen (robust)
-      await window.NZ.setRouteSlot(route, targetSlot);
-      // species/caught updaten
-      await window.NZ.upsertPokemon(route, toTitle(mon.name), true);
-  
-      await window.NZ.syncNow?.();
-      renderLock = false;
-      renderTeam(); renderBox(); renderBoxDrawer(); renderRouteGroups();
-      console.log("🔓 renderTeam() ist wieder freigegeben.");
-
-    }
-  } catch (err) {
-    console.error('[NZ] drop sync failed:', err);
-    renderLock = false;
-    renderTeam(); renderBox(); renderBoxDrawer(); renderRouteGroups();
-    console.log("🔓 renderTeam() ist wieder freigegeben.");
-  }
+      await placeMonInTeamSlot(mon, i);
     });
 
     // Click-to-place
     slot.addEventListener('click', async ()=>{
-    
-     
       if(!selectedFromBoxUid) return;
       const pick = state.box.find(m=>m.uid===selectedFromBoxUid);
-      console.warn('[NZ] drop event:', pick);
-
-      const res = checkifpokemonisusable(pick.routeName); // nutzt window.nzLastListState
-      if (res === true) {
-      }else {
-        setTimeout(() =>   PokeBanner.warn(`Diese Route ist durch <b style="color:orange">${res.join(', ')}</b> nicht mehr verfügbar! :)`), 5);
-        return;
-      }
-
-
       if(!pick) return;
-
-      const targetSlot = i + 1;
-      const route = pick.routeName || '';
-
-      // Vorheriger Inhalt
-      const prevUid = state.team[i];
-      const prevMon = prevUid ? state.box.find(m=>m.uid===prevUid) : null;
-      const prevRoute = prevMon?.routeName || null;
-
-      // Lokal
-      const already = state.team.findIndex(u=>u===pick.uid);
-      if(already>=0){
-        const back = state.team[i];
-        state.team[already] = back || null;
-      }
-      if(prevMon) prevMon.isInTeam = false;
-      state.team[i] = pick.uid; 
-      pick.isInTeam = true; 
-      selectedFromBoxUid = null;
-
-      save(); renderTeam(); renderBox(); renderBoxDrawer(); renderRouteGroups();
-      $('#pickHint').style.display = 'none';
-
-      // Server
-      try {
-        if (window.NZ && route) {
-          await window.NZ.ensureJoined();
-          holdSync(1500);
-      
-          await window.NZ.setRouteSlot(route, targetSlot);
-          await window.NZ.upsertPokemon(route, toTitle(pick.name), true);
-      
-          await window.NZ.syncNow?.();
-        }
-      } catch (err) {
-        console.error('[NZ] click sync failed:', err);
-      }
+      await placeMonInTeamSlot(pick, i);
     });
 
     // Remove-Button
@@ -1402,7 +1596,23 @@ function openNameDialog(){
 /* ---------- Boot ---------- */
 function boot(){
   load();
-  $$('#tabs .tab-btn').forEach(btn=> btn.addEventListener('click',()=> setActiveTab(btn.dataset.tab)) );
+  $$('#tabs .tab-btn').forEach(btn=> btn.addEventListener('click',()=> { NZAudio.play('click'); setActiveTab(btn.dataset.tab); }) );
+
+  const tabs = $('#tabs');
+  if (tabs && !$('#sfxToggleBtn')) {
+    const b = document.createElement('button');
+    b.id = 'sfxToggleBtn';
+    b.className = 'tab-btn';
+    const refresh = () => b.textContent = `SFX: ${localStorage.getItem(NZ_SFX_KEY) === '0' ? 'OFF' : 'ON'}`;
+    refresh();
+    b.addEventListener('click', () => {
+      const next = localStorage.getItem(NZ_SFX_KEY) === '0';
+      NZAudio.toggle(next);
+      refresh();
+      NZAudio.play('click');
+    });
+    tabs.appendChild(b);
+  }
 
   $('#addRouteBtn')?.addEventListener('click', ()=>{
     const name = $('#addRouteName').value.trim();
