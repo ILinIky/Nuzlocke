@@ -900,19 +900,19 @@ function renderEncounter(){
   const hasMon = !!e.pokemonId;
 
   pane.innerHTML = `
-    <div class="encounter">
-      <div>
-        <div class="preview">
+    <div class="encounter encounter-workspace">
+      <div class="encounter-main">
+        <div class="encounter-control-block">
           <div class="sprite" id="encSprite">${hasMon?`<img alt="${toTitle(e.pokemonName)}" src="${e.sprite}">`:''}</div>
-          <div>
-            <div class="row">
+          <div class="encounter-fields">
+            <div class="row encounter-inputs">
               <select id="pokeSearch">
                 <option value="">Pokémon wählen…</option>
                 ${listHtml}
               </select>
               <input id="nickname" type="text" placeholder="Spitzname (optional)" value="${e.nickname||''}" autocomplete="off">
             </div>
-            <div class="row" style="margin-top:10px">
+            <div class="row encounter-actions">
               <button class="btn ok" id="btnCaught">CATCHED</button>
               <button class="btn warn" id="btnFailed">NOT CATCHED</button>
               <button class="btn bad" id="btnDead">DEAD</button>
@@ -920,28 +920,27 @@ function renderEncounter(){
             </div>
           </div>
         </div>
-       <p class="helper" style="margin-top:10px">
-  Status: <b>${localStatus==='pending'
-    ? 'Offen'
-    : localStatus==='caught'
-      ? 'Gefangen'
-      : localStatus==='dead'
-        ? 'DEAD'
-        : 'Fehlversuch'}</b>
-  ${e.updatedAt ? `• zuletzt aktualisiert: ${new Date(e.updatedAt).toLocaleString()}` : ''}
-</p>
-
+        <div class="encounter-statusbar">
+          <span class="status-label">Status:</span>
+          <strong>${localStatus==='pending'
+            ? 'Offen'
+            : localStatus==='caught'
+              ? 'Gefangen'
+              : localStatus==='dead'
+                ? 'DEAD'
+                : 'Fehlversuch'}</strong>
+          <span class="status-dot">•</span>
+          <span class="status-time">${e.updatedAt ? `zuletzt aktualisiert: ${new Date(e.updatedAt).toLocaleString()}` : 'noch nicht aktualisiert'}</span>
         </div>
-      <div>
-        <div class="card">
-          <h3>Regeln & Hinweise</h3>
-          <ul>
-            <li>Nur das <b>erste Pokémon</b> der Route zählt.</li>
-            <li>Markiere es als <b>Gefangen</b>, um es in die Box zu legen.</li>
-            <li>Du kannst einen Spitznamen vergeben.</li>
-            <li>Ziehe das Pokémon später in einen Team-Slot.</li>
-          </ul>
-        </div>
+      </div>
+      <div class="encounter-side card">
+        <h3>Regeln & Hinweise</h3>
+        <ul>
+          <li>Nur das <b>erste Pokémon</b> der Route zählt.</li>
+          <li>Markiere es als <b>Gefangen</b>, um es in die Box zu legen.</li>
+          <li>Du kannst einen Spitznamen vergeben.</li>
+          <li>Ziehe das Pokémon später in einen Team-Slot.</li>
+        </ul>
       </div>
     </div>
   `;
