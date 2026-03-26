@@ -247,11 +247,76 @@ main{ max-width:1200px; margin:18px auto 64px; padding:0 18px }
 /* ======================================
    ENCOUNTER / SPRITES – epische Bühne
    ====================================== */
-.encounter{ display:grid; grid-template-columns: 1.2fr 1fr; gap:14px }
-.encounter .preview{
-  display:grid; grid-template-columns: minmax(280px, 360px) 1fr; gap:22px; align-items:center;
+.encounter{
+  display:grid;
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 310px);
+  gap:12px;
+  align-items:start;
 }
-@media (max-width:900px){ .encounter .preview{ grid-template-columns:1fr } }
+.encounter-workspace{
+  width:100%;
+  max-width:980px;
+  margin:0 auto;
+}
+.encounter-main{
+  display:grid;
+  gap:10px;
+}
+.encounter-control-block{
+  display:grid;
+  grid-template-columns:minmax(220px, 260px) minmax(0, 1fr);
+  gap:12px;
+  padding:12px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:14px;
+  background:linear-gradient(180deg, rgba(9,15,34,.9), rgba(8,13,31,.94));
+}
+.encounter-fields{
+  display:grid;
+  gap:10px;
+  align-content:center;
+}
+.encounter-inputs{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+.encounter-inputs select,
+.encounter-inputs input{ min-width:0; width:100%; }
+.encounter-actions .btn{
+  min-width:120px;
+  flex:1 1 140px;
+}
+.encounter-statusbar{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 12px;
+  border-radius:11px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(11,18,44,.82);
+  font-size:13px;
+}
+.encounter-statusbar .status-label{ color:#9eb2eb; font-weight:700; }
+.encounter-statusbar .status-time{ color:#c8d6ff; }
+.encounter-statusbar .status-dot{ color:rgba(255,255,255,.45); }
+.encounter-side{
+  padding:12px;
+  border-radius:14px;
+}
+.encounter-side ul{
+  margin:0;
+  padding-left:18px;
+  font-size:13px;
+  line-height:1.4;
+}
+@media (max-width:900px){
+  .encounter,
+  .encounter-control-block,
+  .encounter-inputs{
+    grid-template-columns:1fr;
+  }
+}
 
 .sprite, #encSprite{
   position:relative; width:240px; height:240px; border-radius:16px; overflow:hidden;
@@ -864,8 +929,8 @@ input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inse
     }
 
     #panel-routes .grid.r2c3{
-      grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
-      gap:16px;
+      grid-template-columns: minmax(210px, 260px) minmax(0, 1fr);
+      gap:12px;
       align-items:start;
     }
 
@@ -883,7 +948,7 @@ input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inse
     }
 
     .routes-list{
-      max-height:calc(100vh - 250px);
+      max-height:calc(100vh - 270px);
       padding-right:10px;
     }
 
@@ -905,7 +970,7 @@ input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inse
     }
 
     #panel-routes > .grid > .card:nth-child(2){
-      min-height:calc(100vh - 235px);
+      min-height:calc(100vh - 320px);
       display:flex;
       flex-direction:column;
       justify-content:flex-start;
@@ -920,17 +985,19 @@ input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inse
       flex:1;
       display:flex;
       flex-direction:column;
-      justify-content:center;
+      justify-content:flex-start;
+      gap:10px;
+      padding-top:4px;
     }
 
     #encounterPane .helper{
       margin:0;
-      padding:14px 16px;
+      padding:12px 14px;
       border-radius:12px;
       border:1px solid rgba(255,255,255,.14);
       background:linear-gradient(180deg, rgba(9,15,34,.9), rgba(8,13,31,.9));
       color:#cdd8f8;
-      font-size:14px;
+      font-size:13px;
       line-height:1.5;
     }
 
@@ -981,7 +1048,7 @@ input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inse
 
     @media (max-width: 1120px){
       #panel-routes .grid.r2c3{ grid-template-columns: 1fr; }
-      #panel-routes > .grid > .card:nth-child(2){ min-height:560px; }
+      #panel-routes > .grid > .card:nth-child(2){ min-height:520px; }
       .routes-list{ max-height:320px; }
       nav.tabs{ justify-content:flex-start; }
     }
