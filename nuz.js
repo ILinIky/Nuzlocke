@@ -400,6 +400,47 @@ function buildTypeTag(name, suffix){
   return `${base},${suffix}`;
 }
 
+const TEAM_TYPES = ['normal','fire','water','electric','grass','ice','fighting','poison','ground','flying','psychic','bug','rock','ghost','dragon','dark','steel','fairy'];
+function renderTeamInsights(){
+  const host = $('#teamInsights');
+  if (!host) return;
+
+  const mons = state.team
+    .map(uidRef => uidRef ? state.box.find(m=>m.uid===uidRef) : null)
+    .filter(Boolean);
+
+  if (!mons.length){
+    host.innerHTML = `
+      <div class="card insight-card">
+        <div class="insight-title">⚡ Team-Synergie</div>
+        <div class="insight-helper">Füge Pokémon hinzu, um deine Typ-Abdeckung live zu sehen.</div>
+      </div>
+    `;
+    return;
+  }
+
+  const covered = new Set();
+  mons.forEach(mon => {
+    getTypesByNameFromLocal(mon.name).forEach(t => covered.add(String(t).toLowerCase()));
+  });
+
+  const coveragePercent = Math.round((covered.size / TEAM_TYPES.length) * 100);
+  const weakest = TEAM_TYPES.filter(t => !covered.has(t)).slice(0, 5);
+  const chips = TEAM_TYPES.map(t => `<span class="type-chip ${covered.has(t) ? '' : 'missing'}">${toTitle(t)}</span>`).join('');
+
+  host.innerHTML = `
+    <div class="card insight-card">
+      <div class="insight-top">
+        <div class="insight-title">⚡ Team-Synergie Radar</div>
+        <div class="insight-score">${covered.size}/${TEAM_TYPES.length} Typen abgedeckt (${coveragePercent}%)</div>
+      </div>
+      <div class="coverage-meter"><div class="coverage-fill" style="width:${coveragePercent}%"></div></div>
+      <div class="type-chip-row">${chips}</div>
+      <div class="insight-helper">Nächste gute Ergänzungen: <b>${weakest.length ? weakest.map(toTitle).join(', ') : 'Du deckst bereits alle Typen ab 🎉'}</b></div>
+    </div>
+  `;
+}
+
 const NZAudio = (() => {
   let ctx = null;
   const enabled = () => localStorage.getItem(NZ_SFX_KEY) !== '0';
@@ -1505,6 +1546,7 @@ function renderTeam(){
 
     wrap.appendChild(slot);
   }
+  renderTeamInsights();
 }
 
 function renderRouteGroups(){
