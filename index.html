@@ -329,6 +329,7 @@ input:focus-visible, select:focus-visible, .btn:focus-visible, .route-item:focus
 .team-wrap { display: grid; grid-template-columns: repeat(6, minmax(160px,1fr)); gap: 12px; margin-bottom: 14px; }
 .drawer { margin-top: 12px; }
 #routeGroups { display: grid; gap: 10px; }
+#teamInsights { margin: 10px 0 14px; }
 
 .poke-card {
   position: relative;
@@ -374,6 +375,7 @@ input:focus-visible, select:focus-visible, .btn:focus-visible, .route-item:focus
   left: 10px;
   top: 10px;
   z-index: 2;
+  max-width: calc(100% - 20px);
 }
 .ribbon span {
   display: inline-flex;
@@ -385,7 +387,24 @@ input:focus-visible, select:focus-visible, .btn:focus-visible, .route-item:focus
   color: #d9f8ff;
   font-size: 11px;
   font-weight: 800;
+  line-height: 1.25;
+  white-space: normal;
+  word-break: break-word;
 }
+.poke-card.has-ribbon { padding-top: 44px; }
+
+.insight-card {
+  border: 1px solid rgba(103,240,255,.28);
+  background: linear-gradient(160deg, rgba(10,25,66,.95), rgba(12,53,82,.72));
+}
+.insight-top { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:8px; }
+.insight-title { font-size:13px; font-weight:800; letter-spacing:.2px; }
+.insight-score { font-size:12px; color: var(--text-2); }
+.coverage-meter { height: 10px; border-radius: 999px; background: rgba(255,255,255,.1); overflow: hidden; border:1px solid rgba(151,176,255,.22); }
+.coverage-fill { height:100%; background: linear-gradient(90deg, #00d2ff, #4bffba); transition: width .25s ease; }
+.type-chip-row { display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; }
+.type-chip.missing { opacity: .55; border-style:dashed; }
+.insight-helper { margin-top:8px; color: var(--text-3); font-size: 12px; }
 .status-pill {
   display: inline-flex;
   align-items: center;
@@ -581,6 +600,7 @@ input:focus-visible, select:focus-visible, .btn:focus-visible, .route-item:focus
       <p class="helper pick-hint" id="pickHint" style="margin-top:8px; display:none">
         Auswahl aktiv: Klick einen Slot, um das Pokémon zu platzieren. (Oder ziehe es per Drag & Drop.)
       </p>
+      <div id="teamInsights"></div>
 
       <div class="card drawer">
         <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:10px;">
