@@ -11,7 +11,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" type="text/css" href="filter.css">
-  <link rel="stylesheet" type="text/css" href="moves.css">
   <link rel="stylesheet" type="text/css" href="lobby.css">
   <link rel="stylesheet" type="text/css" href="game.css">
   <link rel="stylesheet" type="text/css" href="login_plus.css">
@@ -151,7 +150,7 @@ header {
 
 nav.tabs {
   display: grid;
-  grid-template-columns: repeat(8, minmax(0,1fr));
+  grid-template-columns: repeat(7, minmax(0,1fr));
   gap: 8px;
   padding: 8px;
   border: 1px solid var(--line-soft);
@@ -322,7 +321,7 @@ input:focus-visible, select:focus-visible, .btn:focus-visible, .route-item:focus
 }
 .result-meta { color: var(--text-3); font-weight: 700; }
 
-.box-grid, .box-grid2, .moves-grid, .games-grid, .gym-grid {
+.box-grid, .box-grid2, .games-grid, .gym-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   gap: 12px;
@@ -331,15 +330,116 @@ input:focus-visible, select:focus-visible, .btn:focus-visible, .route-item:focus
 .drawer { margin-top: 12px; }
 #routeGroups { display: grid; gap: 10px; }
 
+.poke-card {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(110px, 1fr);
+  gap: 10px;
+  min-height: 210px;
+  padding: 12px;
+  overflow: hidden;
+  transform-style: preserve-3d;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+.poke-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(120% 70% at 10% 0%, rgba(255,255,255,.12), transparent 60%);
+}
+.poke-card:hover { transform: translateY(-3px) rotateX(2deg) rotateY(-2deg); }
+.poke-card.dragging { opacity: .75; transform: scale(.98) rotateZ(-1deg); }
+.poke-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.poke-name { font-size: 13px; font-weight: 800; line-height: 1.25; }
+.tag { margin-top: 5px; color: var(--text-3); font-size: 11px; font-weight: 700; }
+.poke-sprite {
+  min-height: 110px;
+  border-radius: 10px;
+  border: 1px solid rgba(151,176,255,.22);
+  background: radial-gradient(circle at 50% 20%, rgba(98,169,255,.2), rgba(8,16,40,.9));
+  display: grid;
+  place-items: center;
+}
+.poke-sprite img {
+  width: min(120px, 90%);
+  max-height: 108px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 8px 12px rgba(0,0,0,.45));
+}
+.ribbon {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  z-index: 2;
+}
+.ribbon span {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(103,240,255,.45);
+  background: rgba(12,58,77,.84);
+  color: #d9f8ff;
+  font-size: 11px;
+  font-weight: 800;
+}
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  border: 1px solid rgba(151,176,255,.3);
+}
+.status-pill.ok { background: rgba(30,106,74,.55); color: #dbfff2; border-color: rgba(53,216,163,.56); }
+.status-pill.bad { background: rgba(114,81,22,.55); color: #fff2d4; border-color: rgba(244,190,74,.5); }
+.status-pill.dead { background: rgba(117,36,50,.62); color: #ffe8ec; border-color: rgba(255,109,127,.6); }
+
+.slot {
+  min-height: 215px;
+  border-radius: 12px;
+  border: 1px dashed rgba(151,176,255,.42);
+  background: linear-gradient(180deg, rgba(15,26,62,.8), rgba(10,18,43,.92));
+  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+.slot.over {
+  border-color: rgba(103,240,255,.7);
+  box-shadow: 0 0 0 2px rgba(103,240,255,.22) inset, 0 12px 28px rgba(0,0,0,.3);
+  transform: translateY(-2px);
+}
+.slot-inner {
+  min-height: 100%;
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+.slot-inner img {
+  width: 100%;
+  max-width: 130px;
+  max-height: 110px;
+  justify-self: center;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 8px 12px rgba(0,0,0,.45));
+}
+.slot .meta { color: var(--text-3); font-size: 12px; }
+
 .poke-card, .box-card, .move-card, .game-card, .gym-card, .team-slot {
   border: 1px solid rgba(151,176,255,.28);
   border-radius: 12px;
   background: linear-gradient(180deg, rgba(23,37,83,.96), rgba(14,24,57,.96));
   box-shadow: var(--shadow-2);
 }
-.poke-card:hover, .box-card:hover, .move-card:hover, .game-card:hover, .gym-card:hover { border-color: rgba(103,240,255,.46); transform: translateY(-2px); }
+.box-card:hover, .move-card:hover, .game-card:hover, .gym-card:hover { border-color: rgba(103,240,255,.46); transform: translateY(-2px); }
 
-#panel-allteams, #panel-lobby, #panel-gyms, #panel-games, #panel-team, #panel-box, #panel-moves { min-height: 74vh; }
+#panel-allteams, #panel-lobby, #panel-gyms, #panel-games, #panel-team, #panel-box { min-height: 74vh; }
 #nz-allteams, #nz-lobby { border: 1px solid var(--line-soft); border-radius: 12px; padding: 12px; background: rgba(11,20,50,.65); }
 .gym-toolbar, .game-actions { padding: 12px; margin-bottom: 12px; }
 .game-actions { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
@@ -375,7 +475,7 @@ input:focus-visible, select:focus-visible, .btn:focus-visible, .route-item:focus
   .title { font-size: 11px; }
   nav.tabs { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .encounter-inputs, .game-actions { grid-template-columns: 1fr; display: grid; }
-  .box-grid, .box-grid2, .moves-grid, .games-grid, .gym-grid, .team-wrap { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .box-grid, .box-grid2, .games-grid, .gym-grid, .team-wrap { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
 </style>
 </head>
@@ -390,7 +490,6 @@ input:focus-visible, select:focus-visible, .btn:focus-visible, .route-item:focus
       <button class="tab-btn" data-tab="box">Box</button>
       <button class="tab-btn" data-tab="team">Team</button>
       <button class="tab-btn" data-tab="allteams">Soul Links</button>
-      <button class="tab-btn" data-tab="moves">Moves</button>
       <button class="tab-btn" data-tab="gyms">Arenen</button>
       <button class="tab-btn" data-tab="lobby">Lobby</button>
       <button class="tab-btn" data-tab="games">Spiel</button>
@@ -503,58 +602,6 @@ input:focus-visible, select:focus-visible, .btn:focus-visible, .route-item:focus
       <div id="nz-allteams"></div>
     </section>
 
-    <!-- MOVES -->
-    <section class="panel" id="panel-moves">
-      <div class="pk-toolbar move-toolbar">
-        <div class="input-wrap">
-          <span class="poke-ball" aria-hidden="true"></span>
-          <input id="mvSearch" type="search" placeholder="Moves suchen (Name, Effekt) …" autocomplete="off">
-          <button class="btn ghost" id="mvReset">Reset</button>
-        </div>
-    
-        <div class="row" style="gap:10px; align-items:center; flex-wrap:wrap">
-          <div class="chip-group" style="min-width:280px; flex:1">
-            <div class="chip-title">Typen</div>
-            <div class="chip-row" id="mvTypeChips"></div>
-          </div>
-          <div class="chip-group" style="min-width:220px">
-            <div class="chip-title">Damage Class</div>
-            <div class="chip-row" id="mvClassChips"></div>
-          </div>
-          <div class="row" style="gap:8px; align-items:center">
-            <label class="pill">
-              <span>Tiering</span>
-              <select id="mvTierMode">
-                <option value="score">Score-Feld nutzen</option>
-                <option value="auto">Heuristik</option>
-              </select>
-            </label>
-            <label class="pill">
-              <span>Sortieren</span>
-              <select id="mvSort">
-                <option value="tier">Tier (S→D)</option>
-                <option value="score">Score</option>
-                <option value="power">Power</option>
-                <option value="accuracy">Accuracy</option>
-                <option value="pp">PP</option>
-                <option value="name">Name</option>
-              </select>
-              <button class="btn ghost" id="mvSortDir" title="Richtung">↓</button>
-            </label>
-          </div>
-        </div>
-    
-        <div class="result-meta" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap">
-          <span><b id="mvCount">–</b> Moves</span>
-          <div class="tier-bar" id="mvTierBar">
-            <!-- Tier-Chips via JS -->
-          </div>
-        </div>
-      </div>
-    
-      <div class="moves-grid" id="movesGrid"></div>
-    </section>
-    
 
 
     <!-- LOBBY -->
@@ -636,8 +683,6 @@ input:focus-visible, select:focus-visible, .btn:focus-visible, .route-item:focus
     </div>
   </section>
   <script src="pokemon-select.js"></script>
-  <script type="module" src="./moves_load.js"></script>
-  <script type="module" src="./moves.js"></script>
   <script src="login_plus.js"></script>
   <script src="arena.js"></script>
   <script type="module" src="./nuz.js?v=20260304b"></script>
