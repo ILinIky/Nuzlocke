@@ -1885,9 +1885,10 @@ function nzRenderLobby(st){
             <div class="logo" aria-hidden="true"></div>
             <div class="title">Lobby<small>Multiplayer • Pokémon Style</small></div>
           </div>
-          <div class="pill">
+          <div class="pill online-pill">
             <span class="online-dot on"></span>
-            <b>${onlineCount}</b>/<b>${players.length}</b> online
+            <span class="online-count"><b>${onlineCount}</b>/<b>${players.length}</b></span>
+            <span class="online-label">online</span>
           </div>
         </div>
   
@@ -1938,9 +1939,12 @@ function nzRenderLobby(st){
           <div class="input-wrap">
             <span class="poke-ball" aria-hidden="true"></span>
             <input id="nzPlayerSearch" type="search" placeholder="Spieler durchsuchen …">
-            <label class="toggle">
+            <label class="toggle modern-toggle" for="nzHideOffline">
               <input type="checkbox" id="nzHideOffline">
-              <span>Offline ausblenden</span>
+              <span class="track" aria-hidden="true">
+                <span class="thumb"></span>
+              </span>
+              <span class="toggle-label">Offline ausblenden</span>
             </label>
           </div>
         </div>
