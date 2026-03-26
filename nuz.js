@@ -1908,21 +1908,23 @@ function nzRenderLobby(st){
             <div class="input-wrap name-wrap">
               <span class="poke-ball" aria-hidden="true"></span>
               <input id="nzName" type="text" hidden="true" placeholder="Dein Name" value="${_esc(name)}" readonly>
-<button id="nzRename" class="btn warn" style="display:none" title="Name ändern">TEST</button>
-<button id="themeBtn" class="btn warn" title="Theme ändern">Theme ändern</button>
-<button id="renameBtn" class="btn warn" title="Name ändern">Name ändern</button>
-<button id="uploadRoutes"
-        onclick="handleUploadRoutesClick(event)"
-        class="btn warn" title="Routes hochladen">
-  Upload Routes
-</button>
-<button id="uploadRoutes"
-        onclick="downloadRoutesSample(event)"
-        class="btn warn" title="⬇ download routes">
-  ⬇ Download
-</button>
-<button id="nzCreate" style="display:none" class="btn ok">Erstellen</button>
-<button id="nzJoin" style="display:none" class="btn">${joinLabel}</button>
+              <div class="lobby-action-grid">
+                <button id="nzRename" class="btn warn" style="display:none" title="Name ändern">TEST</button>
+                <button id="themeBtn" class="btn warn" title="Theme ändern">Theme ändern</button>
+                <button id="renameBtn" class="btn warn" title="Name ändern">Name ändern</button>
+                <button id="uploadRoutes"
+                        onclick="handleUploadRoutesClick(event)"
+                        class="btn warn" title="Routes hochladen">
+                  Upload Routes
+                </button>
+                <button id="downloadRoutes"
+                        onclick="downloadRoutesSample(event)"
+                        class="btn warn" title="⬇ download routes">
+                  ⬇ Download
+                </button>
+                <button id="nzCreate" style="display:none" class="btn ok">Erstellen</button>
+                <button id="nzJoin" style="display:none" class="btn">${joinLabel}</button>
+              </div>
             </div>
           </div>
   
