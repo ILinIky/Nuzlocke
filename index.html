@@ -823,6 +823,169 @@ input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inse
 
 
   </style>
+  <style>
+    /* === 2026 polish pass: professional layout without changing core concept === */
+    main{
+      max-width:min(1800px, 96vw);
+      margin:14px auto 56px;
+      padding:0 clamp(14px, 1.2vw, 26px);
+    }
+
+    header{
+      padding:14px clamp(14px, 1.2vw, 24px);
+      gap:24px;
+    }
+
+    .brand{ flex:0 0 auto; }
+    .title{ font-size:13px; }
+    .title small{ opacity:.9; }
+
+    nav.tabs{
+      flex:1 1 auto;
+      justify-content:flex-end;
+      align-items:center;
+      gap:10px;
+    }
+
+    .tab-btn{
+      min-width:104px;
+      border-radius:11px;
+      padding:10px 13px;
+      background:linear-gradient(180deg, #131d44 0%, #0d1737 100%);
+      border-color:rgba(255,255,255,.14);
+      box-shadow:0 4px 14px rgba(0,0,0,.2);
+    }
+
+    .panel{
+      border-radius:16px;
+      padding:14px;
+      border:1px solid rgba(255,255,255,.1);
+      box-shadow:0 20px 45px rgba(0,0,0,.28);
+    }
+
+    #panel-routes .grid.r2c3{
+      grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+      gap:16px;
+      align-items:start;
+    }
+
+    #panel-routes aside.card{
+      background:linear-gradient(180deg, rgba(15,24,58,.95), rgba(11,18,45,.95));
+      padding:12px;
+      border-radius:14px;
+    }
+
+    #panel-routes .card h3{
+      margin:2px 0 10px;
+      font-size:13px;
+      letter-spacing:.35px;
+      color:#d9e5ff;
+    }
+
+    .routes-list{
+      max-height:calc(100vh - 250px);
+      padding-right:10px;
+    }
+
+    .route-item{
+      margin:6px 0;
+      padding:11px 10px;
+      border-radius:10px;
+      justify-content:space-between;
+      text-align:left;
+      background:linear-gradient(180deg,#111b43 0%, #0d1638 100%);
+      border:1px solid rgba(255,255,255,.1);
+      box-shadow:0 6px 15px rgba(0,0,0,.24);
+    }
+
+    .route-item .rname{
+      font-size:13px;
+      font-weight:800;
+      color:#e9eeff;
+    }
+
+    #panel-routes > .grid > .card:nth-child(2){
+      min-height:calc(100vh - 235px);
+      display:flex;
+      flex-direction:column;
+      justify-content:flex-start;
+      background:
+        radial-gradient(720px 280px at 50% -20%, rgba(255,204,0,.12), transparent 68%),
+        linear-gradient(180deg, rgba(18,29,70,.96), rgba(10,16,39,.96));
+      border-color:rgba(255,255,255,.14);
+      box-shadow:0 26px 50px rgba(0,0,0,.34), inset 0 0 0 1px rgba(255,255,255,.03);
+    }
+
+    #encounterPane{
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+    }
+
+    #encounterPane .helper{
+      margin:0;
+      padding:14px 16px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.14);
+      background:linear-gradient(180deg, rgba(9,15,34,.9), rgba(8,13,31,.9));
+      color:#cdd8f8;
+      font-size:14px;
+      line-height:1.5;
+    }
+
+    #encounterPane .row{
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .btn{
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,.15);
+      min-height:40px;
+      padding:0 14px;
+      font-weight:800;
+      letter-spacing:.2px;
+      transition:.18s ease;
+    }
+
+    .btn.ok{ background:linear-gradient(180deg, #1c7f63 0%, #14674f 100%); }
+    .btn.warn{ background:linear-gradient(180deg, #9d7220 0%, #7f5914 100%); color:#fff4da; }
+    .btn.bad{ background:linear-gradient(180deg, #8b3333 0%, #6a2424 100%); }
+    .btn:hover{ transform:translateY(-1px); filter:brightness(1.05); }
+
+    .helper, .status-note{ color:#b8c6ee; }
+    .badge{ border-color:rgba(255,255,255,.2); font-weight:800; }
+
+    .run-info{
+      margin-top:10px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.12);
+      padding:12px;
+      background:linear-gradient(180deg, rgba(13,22,52,.9), rgba(10,16,39,.9));
+    }
+    .run-info h4{
+      margin:0 0 8px;
+      font-size:12px;
+      letter-spacing:.4px;
+      color:#f2d56e;
+      text-transform:uppercase;
+    }
+    .run-info ul{
+      margin:0;
+      padding-left:18px;
+      color:#d7e2ff;
+      font-size:13px;
+      line-height:1.45;
+    }
+
+    @media (max-width: 1120px){
+      #panel-routes .grid.r2c3{ grid-template-columns: 1fr; }
+      #panel-routes > .grid > .card:nth-child(2){ min-height:560px; }
+      .routes-list{ max-height:320px; }
+      nav.tabs{ justify-content:flex-start; }
+    }
+  </style>
 </head>
 <body>
   <header>
@@ -854,6 +1017,14 @@ input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inse
             <button class="btn" id="addRouteBtn">+ Hinzufügen</button>
           </div>
           <div class="routes-list" id="routesList"></div>
+          <div class="run-info">
+            <h4>Run-Hinweise</h4>
+            <ul>
+              <li>Pro Route zählt nur der erste valide Encounter.</li>
+              <li>Setze den Status direkt nach dem Kampf konsistent.</li>
+              <li>Nutze Nicknames, damit Soul Links klarer nachvollziehbar sind.</li>
+            </ul>
+          </div>
         </aside>
         <div class="card">
           <h3>Encounter</h3>
