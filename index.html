@@ -889,167 +889,131 @@ input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inse
 
   </style>
   <style>
-    /* === 2026 polish pass: professional layout without changing core concept === */
-    main{
-      max-width:min(1800px, 96vw);
-      margin:14px auto 56px;
-      padding:0 clamp(14px, 1.2vw, 26px);
-    }
-
-    header{
-      padding:14px clamp(14px, 1.2vw, 24px);
-      gap:24px;
-    }
-
-    .brand{ flex:0 0 auto; }
+    main{ max-width:min(1800px, 96vw); margin:14px auto 56px; padding:0 clamp(14px, 1.2vw, 26px); }
+    header{ padding:14px clamp(14px, 1.2vw, 24px); gap:24px; }
     .title{ font-size:13px; }
-    .title small{ opacity:.9; }
-
-    nav.tabs{
-      flex:1 1 auto;
-      justify-content:flex-end;
-      align-items:center;
-      gap:10px;
-    }
-
-    .tab-btn{
-      min-width:104px;
-      border-radius:11px;
-      padding:10px 13px;
-      background:linear-gradient(180deg, #131d44 0%, #0d1737 100%);
-      border-color:rgba(255,255,255,.14);
-      box-shadow:0 4px 14px rgba(0,0,0,.2);
-    }
-
-    .panel{
-      border-radius:16px;
-      padding:14px;
-      border:1px solid rgba(255,255,255,.1);
-      box-shadow:0 20px 45px rgba(0,0,0,.28);
-    }
+    nav.tabs{ flex:1 1 auto; justify-content:flex-end; align-items:center; gap:10px; }
+    .tab-btn{ min-width:104px; border-radius:11px; padding:10px 13px; background:linear-gradient(180deg,#17214a,#0f1739); border-color:rgba(255,255,255,.14); }
+    .panel{ border-radius:18px; padding:16px; border:1px solid rgba(255,255,255,.1); box-shadow:0 28px 56px rgba(0,0,0,.35); }
 
     #panel-routes .grid.r2c3{
-      grid-template-columns: minmax(210px, 260px) minmax(0, 1fr);
+      grid-template-columns:minmax(280px,320px) minmax(0,1fr);
+      gap:16px;
+      align-items:stretch;
+      min-height:calc(100vh - 180px);
+    }
+    .routes-sidebar{
+      display:flex;
+      flex-direction:column;
       gap:12px;
-      align-items:start;
-    }
-
-    #panel-routes aside.card{
-      background:linear-gradient(180deg, rgba(15,24,58,.95), rgba(11,18,45,.95));
-      padding:12px;
-      border-radius:14px;
-    }
-
-    #panel-routes .card h3{
-      margin:2px 0 10px;
-      font-size:13px;
-      letter-spacing:.35px;
-      color:#d9e5ff;
-    }
-
-    .routes-list{
-      max-height:calc(100vh - 270px);
-      padding-right:10px;
-    }
-
-    .route-item{
-      margin:6px 0;
-      padding:11px 10px;
-      border-radius:10px;
-      justify-content:space-between;
-      text-align:left;
-      background:linear-gradient(180deg,#111b43 0%, #0d1638 100%);
-      border:1px solid rgba(255,255,255,.1);
-      box-shadow:0 6px 15px rgba(0,0,0,.24);
-    }
-
-    .route-item .rname{
-      font-size:13px;
-      font-weight:800;
-      color:#e9eeff;
-    }
-
-    #panel-routes > .grid > .card:nth-child(2){
-      min-height:calc(100vh - 320px);
-      display:flex;
-      flex-direction:column;
-      justify-content:flex-start;
-      background:
-        radial-gradient(720px 280px at 50% -20%, rgba(255,204,0,.12), transparent 68%),
-        linear-gradient(180deg, rgba(18,29,70,.96), rgba(10,16,39,.96));
-      border-color:rgba(255,255,255,.14);
-      box-shadow:0 26px 50px rgba(0,0,0,.34), inset 0 0 0 1px rgba(255,255,255,.03);
-    }
-
-    #encounterPane{
-      flex:1;
-      display:flex;
-      flex-direction:column;
-      justify-content:flex-start;
-      gap:10px;
-      padding-top:4px;
-    }
-
-    #encounterPane .helper{
-      margin:0;
-      padding:12px 14px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,.14);
-      background:linear-gradient(180deg, rgba(9,15,34,.9), rgba(8,13,31,.9));
-      color:#cdd8f8;
-      font-size:13px;
-      line-height:1.5;
-    }
-
-    #encounterPane .row{
-      gap:8px;
-      flex-wrap:wrap;
-    }
-
-    .btn{
-      border-radius:10px;
-      border:1px solid rgba(255,255,255,.15);
-      min-height:40px;
-      padding:0 14px;
-      font-weight:800;
-      letter-spacing:.2px;
-      transition:.18s ease;
-    }
-
-    .btn.ok{ background:linear-gradient(180deg, #1c7f63 0%, #14674f 100%); }
-    .btn.warn{ background:linear-gradient(180deg, #9d7220 0%, #7f5914 100%); color:#fff4da; }
-    .btn.bad{ background:linear-gradient(180deg, #8b3333 0%, #6a2424 100%); }
-    .btn:hover{ transform:translateY(-1px); filter:brightness(1.05); }
-
-    .helper, .status-note{ color:#b8c6ee; }
-    .badge{ border-color:rgba(255,255,255,.2); font-weight:800; }
-
-    .run-info{
-      margin-top:10px;
-      border-radius:12px;
+      padding:14px;
+      border-radius:16px;
+      background:linear-gradient(180deg,#131d45,#0d1637);
       border:1px solid rgba(255,255,255,.12);
-      padding:12px;
-      background:linear-gradient(180deg, rgba(13,22,52,.9), rgba(10,16,39,.9));
+      box-shadow:0 14px 36px rgba(0,0,0,.35);
     }
-    .run-info h4{
-      margin:0 0 8px;
-      font-size:12px;
-      letter-spacing:.4px;
-      color:#f2d56e;
-      text-transform:uppercase;
+    .sidebar-head h3{ margin:0; font-size:15px; letter-spacing:.4px; }
+    .sidebar-head p{ margin:6px 0 0; color:#9cb0e8; font-size:12px; }
+    .routes-list{
+      flex:1;
+      min-height:320px;
+      max-height:calc(100vh - 360px);
+      padding-right:8px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
     }
-    .run-info ul{
+    .route-item{
       margin:0;
-      padding-left:18px;
-      color:#d7e2ff;
-      font-size:13px;
-      line-height:1.45;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.11);
+      background:linear-gradient(180deg,#121c44,#0d1737);
+      box-shadow:0 8px 18px rgba(0,0,0,.25);
+      transition:.2s ease;
+      cursor:pointer;
     }
+    .route-item:hover{ transform:translateY(-1px); border-color:rgba(255,255,255,.2); }
+    .route-item.active{ border-color:rgba(255,210,63,.8); box-shadow:0 0 0 1px rgba(255,210,63,.5) inset,0 16px 28px rgba(0,0,0,.36);}
+    .route-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 12px; }
+    .route-meta{ display:flex; flex-direction:column; min-width:0; gap:3px; }
+    .route-item .rname{ font-size:13px; font-weight:800; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .route-index{ font-size:11px; color:#8fa3de; letter-spacing:.2px; }
+    .route-chevron{ color:#7f90c8; font-weight:900; }
+    .badge{ font-size:10px; letter-spacing:.35px; padding:4px 8px; }
+    .run-info{
+      margin-top:auto;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.1);
+      background:linear-gradient(180deg,#101a3f,#0b1432);
+      padding:12px;
+    }
+    .run-info h4{ margin:0 0 8px; font-size:11px; color:#f3d878; letter-spacing:.65px; text-transform:uppercase; }
+    .run-info ul{ margin:0; padding-left:16px; font-size:12px; color:#c3d2fb; line-height:1.45; }
+
+    .encounter-shell{
+      display:grid;
+      grid-template-columns:minmax(0,1.7fr) minmax(260px,.9fr);
+      gap:14px;
+      height:100%;
+    }
+    .encounter-main-card{
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.14);
+      background:radial-gradient(900px 360px at 50% -20%,rgba(255,204,0,.12),transparent 70%), linear-gradient(180deg,#182453,#0d1737);
+      box-shadow:0 28px 46px rgba(0,0,0,.4);
+      padding:16px;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+    .encounter-head{ display:flex; justify-content:space-between; align-items:center; gap:10px; }
+    .encounter-head h3{ margin:0; font-size:16px; }
+    .enc-route-pill{ font-size:11px; font-weight:700; color:#d8e4ff; padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.18); background:rgba(13,22,54,.8);}
+    .encounter-body{ display:grid; grid-template-columns:minmax(200px,260px) minmax(0,1fr); gap:14px; align-items:stretch; }
+    .sprite-panel{ border:1px solid rgba(255,255,255,.1); border-radius:14px; background:linear-gradient(180deg,rgba(11,18,44,.95),rgba(8,14,32,.95)); display:grid; place-items:center; min-height:252px; }
+    .sprite{ width:100%; min-height:240px; display:grid; place-items:center; }
+    .sprite img{ max-width:86%; max-height:220px; filter:drop-shadow(0 16px 28px rgba(0,0,0,.5)); }
+    .encounter-controls{ display:flex; flex-direction:column; gap:10px; }
+    .encounter-inputs{ display:grid; grid-template-columns:1fr; gap:10px; }
+    .encounter-inputs select, .encounter-inputs input{ min-height:44px; border-radius:10px; background:#0d1738; border:1px solid rgba(255,255,255,.18); padding:0 12px; color:#edf2ff; font-weight:600; }
+    .encounter-inputs select:focus, .encounter-inputs input:focus{ outline:none; border-color:#ffd23f; box-shadow:0 0 0 2px rgba(255,210,63,.22); }
+    .encounter-actions{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .btn{ border-radius:10px; border:1px solid rgba(255,255,255,.15); min-height:42px; padding:0 14px; font-weight:800; letter-spacing:.2px; transition:.18s ease; }
+    .btn.ok{ background:linear-gradient(180deg,#1e8b6d,#146750); }
+    .btn.warn{ background:linear-gradient(180deg,#9f7420,#7d5614); color:#fff3d7; }
+    .btn.bad{ background:linear-gradient(180deg,#8d3232,#671e1e); }
+    .btn:hover{ transform:translateY(-1px); filter:brightness(1.06); }
+    .btn:focus-visible{ outline:none; box-shadow:0 0 0 2px rgba(255,210,63,.3); }
+    .encounter-statusbar{
+      display:grid;
+      grid-template-columns:auto auto auto minmax(0,1fr);
+      gap:8px;
+      align-items:center;
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:12px;
+      background:linear-gradient(180deg,#101a3f,#0b1432);
+      padding:11px 12px;
+    }
+    .status-label,.status-time{ color:#afc2f5; font-size:12px; }
+    .status-dot{ color:#697db6; }
+    .encounter-support{
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.12);
+      background:linear-gradient(180deg,#121d46,#0c1431);
+      padding:14px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .encounter-support h3{ margin:0; font-size:14px; }
+    .encounter-support ul{ margin:0; padding-left:17px; color:#ccd8ff; line-height:1.5; font-size:12px; }
+    #encounterPane .helper{ margin:0; padding:14px; border-radius:12px; border:1px solid rgba(255,255,255,.14); background:linear-gradient(180deg,#111b42,#0c1430); color:#cdd8f8; }
 
     @media (max-width: 1120px){
-      #panel-routes .grid.r2c3{ grid-template-columns: 1fr; }
-      #panel-routes > .grid > .card:nth-child(2){ min-height:520px; }
-      .routes-list{ max-height:320px; }
+      #panel-routes .grid.r2c3{ grid-template-columns:1fr; min-height:auto; }
+      .routes-list{ max-height:280px; }
+      .encounter-shell{ grid-template-columns:1fr; }
+      .encounter-body{ grid-template-columns:1fr; }
       nav.tabs{ justify-content:flex-start; }
     }
   </style>
@@ -1077,8 +1041,11 @@ input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inse
     <!-- ROUTES -->
     <section class="panel active" id="panel-routes">
       <div class="grid r2c3">
-        <aside class="card">
-          <h3>Routen & Orte</h3>
+        <aside class="routes-sidebar">
+          <div class="sidebar-head">
+            <h3>Routen & Orte</h3>
+            <p>Wähle eine Route und verwalte deinen First-Encounter-Status.</p>
+          </div>
           <div class="row" style="margin-bottom:10px; display: none;">
             <input id="addRouteName" type="text" placeholder="Eigene Route hinzufügen…" />
             <button class="btn" id="addRouteBtn">+ Hinzufügen</button>
@@ -1094,7 +1061,6 @@ input[type=text]:focus, input[type=search]:focus, select:focus{ box-shadow: inse
           </div>
         </aside>
         <div class="card">
-          <h3>Encounter</h3>
           <div id="encounterPane">
             <p class="helper">Wähle links eine Route, um ein Pokémon zuzuweisen.</p>
           </div>
