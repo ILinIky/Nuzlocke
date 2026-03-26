@@ -861,7 +861,7 @@ let currentRouteId = null;
 
 function renderRoutes(){
     const wrap = $('#routesList'); wrap.innerHTML = '';
-    state.routes.forEach(rt => {
+    state.routes.forEach((rt, idx) => {
       const div = document.createElement('div');
       div.className = 'route-item' + (currentRouteId===rt.id ? ' active' : '');
       div.dataset.routeName = rt.name;
@@ -875,13 +875,14 @@ function renderRoutes(){
        }
 
       div.innerHTML = `
-       <div class="route-item">
-  <div class="left">
-    <span class="rname">${rt.name}</span>
-    <span class="badge ${statusClass}">${statusText}</span>
-  </div>
-  <div class="chev">›</div>
-</div>
+        <div class="route-row">
+          <div class="route-meta">
+            <span class="rname">${rt.name}</span>
+            <span class="route-index">Gebiet ${idx + 1}</span>
+          </div>
+          <span class="badge ${statusClass}">${statusText}</span>
+          <div class="route-chevron">›</div>
+        </div>
       `;
       div.onclick = ()=>{ currentRouteId = rt.id; renderRoutes(); renderEncounter(); };
       wrap.appendChild(div);
@@ -900,19 +901,25 @@ function renderEncounter(){
   const hasMon = !!e.pokemonId;
 
   pane.innerHTML = `
-    <div class="encounter encounter-workspace">
-      <div class="encounter-main">
-        <div class="encounter-control-block">
-          <div class="sprite" id="encSprite">${hasMon?`<img alt="${toTitle(e.pokemonName)}" src="${e.sprite}">`:''}</div>
-          <div class="encounter-fields">
-            <div class="row encounter-inputs">
+    <div class="encounter-shell">
+      <div class="encounter-main-card">
+        <div class="encounter-head">
+          <h3>Encounter Control Center</h3>
+          <span class="enc-route-pill">${rt.name}</span>
+        </div>
+        <div class="encounter-body">
+          <div class="sprite-panel">
+            <div class="sprite" id="encSprite">${hasMon?`<img alt="${toTitle(e.pokemonName)}" src="${e.sprite}">`:''}</div>
+          </div>
+          <div class="encounter-controls">
+            <div class="encounter-inputs">
               <select id="pokeSearch">
                 <option value="">Pokémon wählen…</option>
                 ${listHtml}
               </select>
               <input id="nickname" type="text" placeholder="Spitzname (optional)" value="${e.nickname||''}" autocomplete="off">
             </div>
-            <div class="row encounter-actions">
+            <div class="encounter-actions">
               <button class="btn ok" id="btnCaught">CATCHED</button>
               <button class="btn warn" id="btnFailed">NOT CATCHED</button>
               <button class="btn bad" id="btnDead">DEAD</button>
@@ -933,15 +940,15 @@ function renderEncounter(){
           <span class="status-time">${e.updatedAt ? `zuletzt aktualisiert: ${new Date(e.updatedAt).toLocaleString()}` : 'noch nicht aktualisiert'}</span>
         </div>
       </div>
-      <div class="encounter-side card">
+      <aside class="encounter-support">
         <h3>Regeln & Hinweise</h3>
         <ul>
           <li>Nur das <b>erste Pokémon</b> der Route zählt.</li>
-          <li>Markiere es als <b>Gefangen</b>, um es in die Box zu legen.</li>
-          <li>Du kannst einen Spitznamen vergeben.</li>
-          <li>Ziehe das Pokémon später in einen Team-Slot.</li>
+          <li>Markiere den Ausgang sofort als <b>CATCHED</b>, <b>NOT CATCHED</b> oder <b>DEAD</b>.</li>
+          <li>Verwende Nicknames für bessere Soul-Link-Nachverfolgung.</li>
+          <li>Gefangene Pokémon landen direkt in der Box und können ins Team gezogen werden.</li>
         </ul>
-      </div>
+      </aside>
     </div>
   `;
 
